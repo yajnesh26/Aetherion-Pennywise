@@ -34,13 +34,15 @@ export default function GoalCard({ goal, onDelete }) {
       <ProgressBar current={goal.saved} target={goal.target} />
 
       {/* Prediction */}
-      <div className="mt-3 flex items-center gap-2 bg-emerald-500/10 rounded-lg px-3 py-2">
-        <TrendingUp className="w-4 h-4 text-primary" />
-        <span className="text-xs text-emerald-400 font-medium">
-          {goal.saved >= goal.target
-            ? "🎉 Goal achieved!"
-            : `You can buy this in ~${daysLeft} days`}
-        </span>
+      <div className="mt-3">
+        <div className="tag tag-emerald inline-flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-emerald-200" />
+          <span className="text-xs">
+            {goal.saved >= goal.target
+              ? "🎉 Goal achieved!"
+              : `You can buy this in ~${daysLeft} days`}
+          </span>
+        </div>
       </div>
     </div>
   );

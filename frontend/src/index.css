@@ -1,14 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #10b981;
-  --color-primary-dark: #059669;
-  --color-primary-light: #064e3b;
-  --color-accent: #6366f1;
-  --color-accent-light: #312e81;
-  --color-surface: #0f172a;
-  --color-card: #1e293b;
-  --color-card-hover: #334155;
+  /* Primary greens and bluish-black accents */
+  --color-primary: #16a34a; /* emerald-ish */
+  --color-primary-dark: #0f766e;
+  --color-primary-light: #065f46;
+  --color-accent: #06b6d4; /* teal/cyan accent */
+  --color-accent-dark: #0ea5a4;
+  --color-surface: #030617; /* near-black with bluish tint */
+  --color-card: rgba(14, 23, 34, 0.6);
+  --color-card-hover: rgba(24, 38, 49, 0.7);
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
@@ -22,7 +23,12 @@
   body {
     font-family: var(--font-sans);
     background-color: var(--color-surface);
-    color: #e2e8f0;
+    color: #e6eef6;
+    /* ambient gradient background */
+    background-image: radial-gradient(ellipse at 10% 10%, rgba(6,182,212,0.06), transparent 10%),
+      radial-gradient(ellipse at 90% 80%, rgba(16,185,129,0.045), transparent 15%),
+      linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(5,10,25,1) 100%);
+    background-attachment: fixed;
     min-height: 100vh;
   }
 
@@ -74,6 +80,86 @@
 
 .animate-progressFill {
   animation: progressFill 0.8s ease-out;
+}
+
+/* Floating subtle motion */
+@keyframes floatY {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.96); }
+  60% { opacity: 1; transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.animate-float {
+  animation: floatY 4s ease-in-out infinite;
+}
+
+.animate-pop {
+  animation: popIn 260ms cubic-bezier(0.2, 0.9, 0.26, 1) both;
+}
+
+/* Card and button utilities for the new theme */
+.card-glass {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.04);
+  backdrop-filter: blur(6px);
+}
+
+.btn-emerald {
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent-dark) 100%);
+  color: white;
+  box-shadow: 0 8px 20px rgba(16,185,129,0.08), 0 2px 6px rgba(14,165,233,0.04);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.btn-emerald:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(16,185,129,0.12); }
+
+.glow {
+  box-shadow: 0 6px 30px rgba(6,182,212,0.06), 0 2px 8px rgba(16,185,129,0.05) inset;
+}
+
+.avatar-glow {
+  background: linear-gradient(135deg, rgba(6,182,212,0.12), rgba(16,185,129,0.08));
+  border-radius: 9999px;
+}
+
+/* subtle hover for cards */
+.card-hover:hover {
+  transform: translateY(-6px);
+  transition: transform .18s ease;
+}
+
+/* Lightweight tag/chip style for small labels and chips */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 600;
+  color: rgba(230, 238, 246, 0.95);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.04);
+  backdrop-filter: blur(6px);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+.tag:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(3,6,23,0.55); }
+
+.tag-muted {
+  color: rgba(200, 210, 220, 0.9);
+  background: linear-gradient(180deg, rgba(10,20,30,0.35), rgba(8,14,22,0.28));
+  border: 1px solid rgba(255,255,255,0.02);
+}
+
+.tag-emerald {
+  color: #dffaf0;
+  background: linear-gradient(90deg, rgba(16,185,129,0.08), rgba(6,182,212,0.04));
+  border: 1px solid rgba(16,185,129,0.06);
 }
 
 /* Hide scrollbar for contacts row */

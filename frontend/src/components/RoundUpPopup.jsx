@@ -37,8 +37,8 @@ export default function RoundUpPopup({ payment, roundUpInfo, onSave, onSkip }) {
 
         {/* Success icon */}
         <div className="flex justify-center mb-4">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/10 ring-1 ring-emerald-500/20 flex items-center justify-center">
-            <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-600/10 to-cyan-500/8 ring-1 ring-emerald-500/20 flex items-center justify-center animate-pop glow">
+            <CheckCircle2 className="w-8 h-8 text-emerald-300" />
           </div>
         </div>
 
@@ -97,7 +97,7 @@ export default function RoundUpPopup({ payment, roundUpInfo, onSave, onSkip }) {
             </button>
             <button
               onClick={handleSave}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.97] flex items-center justify-center gap-1.5"
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white btn-emerald transition-all active:scale-[0.97] flex items-center justify-center gap-1.5"
             >
               <PiggyBank className="w-4 h-4" />
               Save ₹{spare}

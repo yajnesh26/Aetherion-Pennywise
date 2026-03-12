@@ -62,7 +62,7 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
 
         {/* Contact info */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg avatar-glow animate-float">
             <span className="text-sm font-bold text-white">{initials}</span>
           </div>
           <div>
@@ -101,11 +101,7 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
             <button
               key={qa}
               onClick={() => setAmount(String(qa))}
-              className={`px-3.5 py-1.5 rounded-xl text-sm font-medium transition-all duration-150 ${
-                amount === String(qa)
-                  ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40"
-                  : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-              }`}
+              className={`tag ${amount === String(qa) ? 'tag-emerald' : 'tag-muted'} transition-all duration-150`}
             >
               ₹{qa.toLocaleString()}
             </button>

@@ -32,8 +32,8 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center shadow-md shadow-emerald-500/20">
-              <Wallet className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center shadow-md shadow-emerald-500/20 animate-float avatar-glow">
+              <Wallet className="w-5 h-5 text-white glow" />
             </div>
             <span className="text-xl font-bold text-white group-hover:text-primary transition-colors">
               Penny<span className="text-primary">Wise</span>
