@@ -31,6 +31,7 @@ app.get("/", (_req, res) => {
   });
 });
 
+require("dotenv").config();
 // ── Route mounting ────────────────────────────────────────
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/goals", require("./routes/goalRoutes"));

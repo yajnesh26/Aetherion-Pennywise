@@ -37,22 +37,45 @@ export default function Chatbot() {
 
     try {
       const res = await askAI({ question: userMsg });
-      const aiText = res.data.answer || "Sorry, I couldn't process that.";
 
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now() + 1, role: "assistant", text: aiText },
-      ]);
+      if (res && res.data) {
+        // API returns { success: true, answer: "..." }
+        const aiText = res.data.answer || (res.data.success === false ? (res.data.message || "Sorry, I couldn't process that.") : "Sorry, I couldn't process that.");
+
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now() + 1, role: "assistant", text: aiText },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now() + 1, role: "assistant", text: "Sorry, I couldn't process that." },
+        ]);
+      }
     } catch (err) {
       console.error("AI error:", err);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          role: "assistant",
-          text: "⚠️ Something went wrong. Please check your connection and try again.",
-        },
-      ]);
+
+      // If unauthenticated (401), suggest login. Otherwise show fallback message.
+      if (err.response && err.response.status === 401) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            role: "assistant",
+            text: "Please log in to use personalized PennyWise AI features. You can still ask general questions.",
+          },
+        ]);
+      } else {
+        // Use a friendly fallback message encouraging retry
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            role: "assistant",
+            text: "⚠️ The assistant is temporarily unavailable. Try again in a moment — here's a tip: Try asking about saving strategies or budgeting.",
+          },
+        ]);
+      }
     } finally {
       setTyping(false);
     }
