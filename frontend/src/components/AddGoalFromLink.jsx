@@ -86,51 +86,16 @@ const MOCK_PRODUCTS = {
  * Simulate fetching product data from a URL.
  * In production, replace with a real backend scraper endpoint.
  */
-function simulateFetch(url) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      try {
-        const urlLower = url.toLowerCase();
+async function simulateFetch(url) {
+  const res = await fetch(
+    `http://localhost:5000/fetch-product?url=${encodeURIComponent(url)}`
+  );
 
-        // Detect platform
-        let platform = null;
-        if (urlLower.includes("amazon")) platform = "amazon.in";
-        else if (urlLower.includes("flipkart")) platform = "flipkart.com";
+  if (!res.ok) {
+    throw new Error("Failed to fetch product");
+  }
 
-        if (!platform) {
-          return reject(
-            new Error("Unsupported platform. Try an Amazon or Flipkart link.")
-          );
-        }
-
-        const products = MOCK_PRODUCTS[platform];
-        // Try to match URL keywords to a mock product
-        const matched = products.find((p) => p.pattern.test(urlLower));
-
-        if (matched) {
-          return resolve({
-            name: matched.name,
-            price: matched.price,
-            image: matched.image,
-            url: url,
-            platform: platform === "amazon.in" ? "Amazon" : "Flipkart",
-          });
-        }
-
-        // Random fallback for unrecognized products on supported platforms
-        const fallback = products[Math.floor(Math.random() * products.length)];
-        resolve({
-          name: fallback.name,
-          price: fallback.price,
-          image: fallback.image,
-          url: url,
-          platform: platform === "amazon.in" ? "Amazon" : "Flipkart",
-        });
-      } catch {
-        reject(new Error("Failed to extract product data."));
-      }
-    }, 1500); // Simulate network delay
-  });
+  return res.json();
 }
 
 /**
@@ -146,6 +111,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
   const [error, setError] = useState("");
   const [product, setProduct] = useState(null); // fetched product
   const [manualPrice, setManualPrice] = useState("");
+  const [nickname, setNickname] = useState("");
   const [imgError, setImgError] = useState(false);
 
   const handleFetch = async () => {
@@ -154,6 +120,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
     setError("");
     setProduct(null);
     setManualPrice("");
+    setNickname("");
     setImgError(false);
 
     try {
@@ -179,7 +146,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
     if (!price || price <= 0) return;
 
     onAddGoal({
-      name: product.name,
+      name: nickname || product.name,
       target: price,
       image: imgError ? null : product.image,
       url: product.url,
@@ -310,6 +277,21 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
                 <h4 className="text-sm font-bold text-white leading-snug mb-3">
                   {product.name}
                 </h4>
+
+                {/* Nickname input */}
+                <div className="mb-3">
+                  <span className="text-[11px] text-slate-500">
+                    Give this goal a nickname
+                  </span>
+
+                  <input
+                    type="text"
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
+                    placeholder="e.g. Gaming Mouse"
+                    className="mt-1 w-full px-3 py-2 rounded-lg bg-slate-800/70 border border-slate-600/40 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none text-xs text-white placeholder-slate-600 transition-all"
+                  />
+                </div>
 
                 {/* Price */}
                 <div className="flex items-baseline gap-2 mb-3">
