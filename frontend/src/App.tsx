@@ -4,7 +4,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Goals from "./pages/Goals";
-import Transaction from "./pages/Transaction";
 import Chatbot from "./pages/Chatbot";
 
 function AppLayout() {
@@ -21,7 +20,6 @@ function AppLayout() {
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/goals" element={<Goals />} />
-        <Route path="/transactions" element={<Transaction />} />
         <Route path="/chat" element={<Chatbot />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

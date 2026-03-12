@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Target,
-  ArrowLeftRight,
   Bot,
   LogOut,
   Menu,
@@ -14,7 +13,6 @@ import {
 const navLinks = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/goals", label: "Goals", icon: Target },
-  { path: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { path: "/chat", label: "AI Assistant", icon: Bot },
 ];
 

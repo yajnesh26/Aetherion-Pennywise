@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
-import { Clock, ChevronRight, ArrowRight } from "lucide-react";
-import GoalCard from "../components/GoalCard";
+import { useState } from "react";
+import { Clock, ChevronRight, Sparkles } from "lucide-react";
 import PaymentActions from "../components/PaymentActions";
 import ContactCard from "../components/ContactCard";
 import PaymentModal from "../components/PaymentModal";
 import RoundUpPopup from "../components/RoundUpPopup";
-import SavingsCard from "../components/SavingsCard";
+import PriorityGoalCard from "../components/PriorityGoalCard";
 
 // ── Dummy data (replace with API later) ───────────────────
 const dummyContacts = [
@@ -19,13 +18,6 @@ const dummyContacts = [
   { id: 8, name: "Zomato", upi: "zomato@paytm" },
 ];
 
-const dummyGoals = [
-  { id: 1, name: "iPhone 16", target: 79900, saved: 32000, dailySaving: 800 },
-  { id: 2, name: "Goa Trip", target: 25000, saved: 18500, dailySaving: 400 },
-  { id: 3, name: "PS5 Controller", target: 5900, saved: 4200, dailySaving: 150 },
-  { id: 4, name: "New Sneakers", target: 8500, saved: 1200, dailySaving: 200 },
-];
-
 const dummyTransactions = [
   { id: 1, desc: "Swiggy Order", amount: 287, roundUp: 13, date: "Today" },
   { id: 2, desc: "Uber Ride", amount: 142, roundUp: 8, date: "Today" },
@@ -33,12 +25,46 @@ const dummyTransactions = [
   { id: 4, desc: "Coffee", amount: 85, roundUp: 15, date: "Yesterday" },
 ];
 
+// Goal data (mirrors Goals page — replace with shared state/API later)
+const dashboardGoals = [
+  {
+    id: 1,
+    name: "Nike Air Max 90",
+    target: 3500,
+    image: "https://m.media-amazon.com/images/I/71GZNHP+XAL._AC_SL1500_.jpg",
+    url: "https://www.amazon.in/dp/B0EXAMPLE1",
+  },
+  {
+    id: 2,
+    name: "Sony WH-1000XM5 Headphones",
+    target: 2500,
+    image: "https://m.media-amazon.com/images/I/51aXvjzcukL._AC_SL1500_.jpg",
+    url: "https://www.amazon.in/dp/B0EXAMPLE2",
+  },
+  {
+    id: 3,
+    name: "SG English Willow Cricket Bat",
+    target: 1800,
+    image: "https://m.media-amazon.com/images/I/41WjQoL5lNL._AC_SL1200_.jpg",
+    url: "https://www.amazon.in/dp/B0EXAMPLE3",
+  },
+  {
+    id: 4,
+    name: "Goa Trip",
+    target: 12000,
+  },
+  {
+    id: 5,
+    name: "PS5 DualSense Controller",
+    target: 5900,
+    image: "https://m.media-amazon.com/images/I/61lsPklJzAL._AC_SL1500_.jpg",
+    url: "https://www.amazon.in/dp/B0EXAMPLE5",
+  },
+];
+const TOTAL_SAVINGS = 2800;
+
 export default function Dashboard() {
-  const [goals, setGoals] = useState(dummyGoals);
   const [transactions, setTransactions] = useState(dummyTransactions);
-  const [totalSavings, setTotalSavings] = useState(8450);
-  const [streak] = useState(12);
-  const [roundUpsToday, setRoundUpsToday] = useState(2);
 
   // Payment flow states
   const [paymentModal, setPaymentModal] = useState(null); // contact object or null
@@ -58,11 +84,9 @@ export default function Dashboard() {
   };
 
   const handleActionClick = (actionLabel) => {
-    // For "Pay Contacts", show a generic contact modal
     if (actionLabel === "Pay Contacts" || actionLabel === "Send Money") {
       setPaymentModal({ name: "Enter Details", upi: "" });
     } else {
-      // For other actions, show a generic payment modal
       setPaymentModal({ name: actionLabel, upi: `${actionLabel.toLowerCase().replace(" ", "")}@upi` });
     }
   };
@@ -70,7 +94,6 @@ export default function Dashboard() {
   const handlePaymentComplete = (paymentData) => {
     setPaymentModal(null);
 
-    // Add to transactions
     const newTx = {
       id: Date.now(),
       desc: `${paymentData.contact.name}`,
@@ -84,15 +107,18 @@ export default function Dashboard() {
     setRoundUpPopup(paymentData);
   };
 
-  const handleRoundUpSave = (saveData) => {
-    setTotalSavings((prev) => prev + saveData.amount);
-    setRoundUpsToday((prev) => prev + 1);
+  const handleRoundUpSave = () => {
     setRoundUpPopup(null);
   };
 
   const handleRoundUpSkip = () => {
     setRoundUpPopup(null);
   };
+
+  // Total round-ups saved today
+  const todayRoundUps = transactions
+    .filter((tx) => tx.date === "Today" || tx.date === "Just now")
+    .reduce((sum, tx) => sum + tx.roundUp, 0);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 space-y-6">
@@ -136,72 +162,69 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* ─── 3. Savings Overview ────────────────────────── */}
-      <section>
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
-          Your Savings
-        </h2>
-        <SavingsCard
-          totalSavings={totalSavings}
-          activeGoals={goals.length}
-          streak={streak}
-          roundUpsToday={roundUpsToday}
-        />
-      </section>
-
-      {/* ─── 4. Goals + Transactions Grid ───────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Goals */}
-        <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-              Goal Progress
-            </h2>
+      {/* ─── 3. Round-Up Savings Suggestion ─────────────── */}
+      {todayRoundUps > 0 && (
+        <section>
+          <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-2xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white">
+                Round-up savings today: <span className="text-emerald-400">₹{todayRoundUps}</span>
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Every transaction rounds up to the nearest ₹10 — small change, big goals!
+              </p>
+            </div>
             <a
               href="/goals"
-              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
+              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 whitespace-nowrap transition-colors"
             >
-              Manage <ArrowRight className="w-3 h-3" />
+              View Goals →
             </a>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {goals.map((goal) => (
-              <GoalCard key={goal.id} goal={goal} />
-            ))}
-          </div>
-        </div>
+        </section>
+      )}
 
-        {/* Recent Round-Up Transactions */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-              Recent Round-Ups
-            </h2>
-            <Clock className="w-4 h-4 text-slate-600" />
-          </div>
-          <div className="bg-slate-800/50 backdrop-blur rounded-2xl border border-slate-700/40 divide-y divide-slate-700/20">
-            {transactions.slice(0, 6).map((tx) => (
-              <div
-                key={tx.id}
-                className="px-4 py-3.5 flex items-center justify-between hover:bg-slate-800/40 transition-colors"
-              >
-                <div>
-                  <p className="text-sm font-medium text-slate-200">{tx.desc}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{tx.date}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-slate-400 font-mono">₹{tx.amount}</p>
-                  {tx.roundUp > 0 && (
-                    <p className="text-xs font-semibold text-emerald-400">
-                      +₹{tx.roundUp} saved
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* ─── 4. Active Priority Goal ───────────────────── */}
+      <section>
+        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+          Goal Progress
+        </h2>
+        <PriorityGoalCard goals={dashboardGoals} totalSavings={TOTAL_SAVINGS} />
+      </section>
+
+      {/* ─── 5. Recent Transactions ─────────────────────── */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+            Recent Transactions
+          </h2>
+          <Clock className="w-4 h-4 text-slate-600" />
         </div>
-      </div>
+        <div className="bg-slate-800/50 backdrop-blur rounded-2xl border border-slate-700/40 divide-y divide-slate-700/20">
+          {transactions.slice(0, 8).map((tx) => (
+            <div
+              key={tx.id}
+              className="px-4 py-3.5 flex items-center justify-between hover:bg-slate-800/40 transition-colors"
+            >
+              <div>
+                <p className="text-sm font-medium text-slate-200">{tx.desc}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{tx.date}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-slate-400 font-mono">₹{tx.amount}</p>
+                {tx.roundUp > 0 && (
+                  <p className="text-xs font-semibold text-emerald-400">
+                    +₹{tx.roundUp} saved
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* ─── Modals / Popups ────────────────────────────── */}
       {paymentModal && (
