@@ -35,17 +35,45 @@ Backend/
 
 ---
 
+## 🗄️ MongoDB Setup
+
+The API relies on a MongoDB database. You can either run a **local server** or use an **Atlas cluster**.
+
+### Running MongoDB locally
+
+1. Install the [MongoDB Community Server](https://www.mongodb.com/try/download/community) or use a package manager.
+2. Start the daemon (adjust path if necessary):
+   ```powershell
+   mongod --dbpath C:\data\db   # Windows example; create the directory first
+   # or simply run the MongoDB service if installed as a service
+   ```
+3. Verify it’s running:
+   ```bash
+   mongo --eval "db.stats()"
+   ```
+
+> If you see `exit code 1`, check the log output – common issues are missing data directory or a port conflict.
+
+### Using Atlas
+
+Create a free cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas), obtain the connection string, and set it as `MONGO_URI` in `.env`.
+
+---
+
 ## ⚙️ Environment Variables
 
-Create a `.env` file in the `Backend/` folder:
+Copy `.env.example` to `.env` in the `Backend/` folder and adjust values as needed.
 
 ```env
+# .env example (also provided as .env.example)
 PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/pennywise
+MONGO_URI=mongodb://127.0.0.1:27017/pennywise   # local Mongo URI used by default if not set
 JWT_SECRET=your_jwt_secret_here
 JWT_EXPIRES_IN=7d
 GEMINI_API_KEY=your_google_gemini_api_key
 ```
+
+> **Note:** If you forget to set `MONGO_URI`, the server will automatically fall back to the local URI above and log a helpful message. Make sure MongoDB is running on your machine or provide a valid connection string (Atlas, Docker container, etc.).
 
 ---
 
@@ -157,14 +185,55 @@ The saved amount is **5–10% of the transaction amount**, with a random jitter 
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/api/ai/ask` | Ask the AI financial assistant | ✅ |
+| `POST` | `/api/ai/ask` | Ask AI about PennyWise, money-saving tips, investing, or budgeting | ✅ |
 
-**Body:**
+**Request Body:**
 ```json
-{ "message": "How can I save more money?" }
+{ "question": "How can I save more money?" }
 ```
 
-Uses **Google Gemini 2.0 Flash**. If the API is unavailable, falls back to keyword-matched offline financial tips.
+**Response:**
+```json
+{
+  "success": true,
+  "answer": "💡 Money-Saving Tips from PennyWise...",
+  "usedFallback": false,
+  "tips": { "message": "Try asking: How do round-up savings work? ..." }
+}
+```
+
+**How it works:**
+1. ✅ Uses **Google Gemini 2.0 Flash** for intelligent, personalized responses
+2. 📚 Powered by system prompt with PennyWise context (features, benefits, philosophy)
+3. 🛡️ **Fallback mode**: If Gemini API is unavailable/invalid, uses offline knowledge base
+4. 💬 Answers questions about:
+   - Round-up savings mechanics
+   - Creating & tracking goals
+   - Money-saving strategies & budgeting tips
+   - Investment basics & compound interest
+   - Transaction tracking & progress monitoring
+
+**Available Topics (Fallback Knowledge Base):**
+- `round-up`: How automatic round-up savings work
+- `goals`: Creating and tracking savings goals
+- `wallet`: Savings wallet and balance management
+- `money-saving`: Practical financial tips & budgeting advice
+- `investment`: Investment basics, mutual funds, compound interest
+- `tracking`: How to monitor progress and transactions
+- `features`: Complete overview of PennyWise capabilities
+
+**Example Queries:**
+```bash
+# Creative financial questions
+"What are the best beginner investments?"
+"How should I use the 50/30/20 budgeting rule?"
+"Explain compound interest in simple terms"
+
+# PennyWise-specific
+"How do round-up savings work?"
+"How do I create a savings goal?"
+"Can I add a product link to auto-create a goal?"
+```
 
 ---
 

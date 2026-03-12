@@ -6,11 +6,28 @@ const connectDB = require("./config/db");
 // ── Load environment variables ────────────────────────────
 dotenv.config();
 
-// ── Connect to MongoDB ────────────────────────────────────
-connectDB();
+// ── Basic sanity checks ───────────────────────────────────
+if (!process.env.JWT_SECRET) {
+  console.warn("⚠️  JWT_SECRET is not set – using default development key");
+  process.env.JWT_SECRET = "dev_secret"; // safe for local/dev only
+}
 
-// ── Initialise Express ────────────────────────────────────
+// ── Initialise Express ───────────────────────────────────
 const app = express();
+
+// ── Connect to MongoDB and start server ───────────────────
+(async () => {
+  try {
+    await connectDB();
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`\n🚀 PennyWise server running on http://localhost:${PORT}\n`);
+    });
+  } catch (err) {
+    console.error("Failed to start server due to DB error", err);
+    process.exit(1);
+  }
+})();
 
 // ── Middleware ─────────────────────────────────────────────
 app.use(cors()); // Allow cross-origin requests from React frontend
@@ -70,8 +87,4 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ success: false, message: "Internal server error" });
 });
 
-// ── Start server ──────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`\n🚀 PennyWise server running on http://localhost:${PORT}\n`);
-});
+console.log("Gemini Key:", process.env.GEMINI_API_KEY);

@@ -116,10 +116,12 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Login error:", error.message);
+    // print full error so we can diagnose (stack included)
+    console.error("Login error:", error);
     res.status(500).json({
       success: false,
       message: "Server error during login",
+      error: error.message, // helpful for debugging in dev
     });
   }
 };
