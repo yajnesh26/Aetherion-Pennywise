@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowLeftRight,
   Calculator,
@@ -7,19 +7,20 @@ import {
   CheckCircle2,
   Sparkles,
 } from "lucide-react";
-// import { addRoundUp } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
+import { fetchTransactions, addTransaction } from "../services/firestore";
 
 export default function Transaction() {
+  const { user } = useAuth();
   const [amount, setAmount] = useState("");
   const [result, setResult] = useState(null);
   const [saved, setSaved] = useState(false);
-  const [history, setHistory] = useState([
-    { id: 1, original: 287, rounded: 290, saved: 3, date: "Today" },
-    { id: 2, original: 142, rounded: 150, saved: 8, date: "Today" },
-    { id: 3, original: 1263, rounded: 1270, saved: 7, date: "Yesterday" },
-    { id: 4, original: 85, rounded: 90, saved: 5, date: "Yesterday" },
-    { id: 5, original: 456, rounded: 460, saved: 4, date: "2 days ago" },
-  ]);
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetchTransactions(user.uid).then(setHistory).catch(console.error);
+  }, [user]);
 
   const calculateRoundUp = () => {
     if (!amount || Number(amount) <= 0) return;
@@ -32,24 +33,28 @@ export default function Transaction() {
     setSaved(false);
   };
 
-  const handleAddToSavings = () => {
+  const handleAddToSavings = async () => {
     if (!result) return;
     setSaved(true);
 
-    const newEntry = {
-      id: Date.now(),
+    const txData = {
       original: result.original,
       rounded: result.rounded,
-      saved: result.saved,
+      roundUp: result.saved,
+      desc: "Round-up",
+      amount: result.original,
       date: "Just now",
     };
-    setHistory([newEntry, ...history]);
 
-    // Uncomment when backend is ready:
-    // addRoundUp({ amount: result.original, roundUp: result.saved });
+    try {
+      const savedTx = await addTransaction(user.uid, txData);
+      setHistory([savedTx, ...history]);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const totalSaved = history.reduce((acc, tx) => acc + tx.saved, 0);
+  const totalSaved = history.reduce((acc, tx) => acc + (tx.roundUp || tx.saved || 0), 0);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -176,7 +181,7 @@ export default function Transaction() {
                     ₹{tx.rounded}
                   </span>
                   <span className="text-primary font-semibold">
-                    +₹{tx.saved}
+                    +₹{tx.roundUp || tx.saved || 0}
                   </span>
                   <span className="text-slate-500">{tx.date}</span>
                 </div>

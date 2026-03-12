@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Wallet, Mail, Lock, ArrowRight } from "lucide-react";
-// import { loginUser } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -19,22 +20,10 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // ── Offline mode: check localStorage ──
-      // Replace this block with: const res = await loginUser(form); when backend is ready
-      const users = JSON.parse(localStorage.getItem("pennywise_users") || "[]");
-      const user = users.find(
-        (u) => u.email === form.email && u.password === form.password
-      );
-      if (!user) {
-        throw { response: { data: { message: "Invalid email or password." } } };
-      }
-      localStorage.setItem("token", "demo-token-" + Date.now());
-      localStorage.setItem("pennywise_user", JSON.stringify({ name: user.name, email: user.email }));
-      // ── End offline mode ──
-
+      await login(form.email, form.password);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed. Please try again.");
+      setError(err.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -6,8 +6,10 @@ import ContactCard from "../components/ContactCard";
 import PaymentModal from "../components/PaymentModal";
 import RoundUpPopup from "../components/RoundUpPopup";
 import SavingsCard from "../components/SavingsCard";
+import { useAuth } from "../contexts/AuthContext";
+import { fetchGoals } from "../services/firestore";
+import { fetchTransactions, addTransaction } from "../services/firestore";
 
-// ── Dummy data (replace with API later) ───────────────────
 const dummyContacts = [
   { id: 1, name: "Rahul S.", upi: "rahul@upi" },
   { id: 2, name: "Swiggy", upi: "swiggy@paytm" },
@@ -19,26 +21,22 @@ const dummyContacts = [
   { id: 8, name: "Zomato", upi: "zomato@paytm" },
 ];
 
-const dummyGoals = [
-  { id: 1, name: "iPhone 16", target: 79900, saved: 32000, dailySaving: 800 },
-  { id: 2, name: "Goa Trip", target: 25000, saved: 18500, dailySaving: 400 },
-  { id: 3, name: "PS5 Controller", target: 5900, saved: 4200, dailySaving: 150 },
-  { id: 4, name: "New Sneakers", target: 8500, saved: 1200, dailySaving: 200 },
-];
-
-const dummyTransactions = [
-  { id: 1, desc: "Swiggy Order", amount: 287, roundUp: 13, date: "Today" },
-  { id: 2, desc: "Uber Ride", amount: 142, roundUp: 8, date: "Today" },
-  { id: 3, desc: "Amazon Purchase", amount: 1263, roundUp: 37, date: "Yesterday" },
-  { id: 4, desc: "Coffee", amount: 85, roundUp: 15, date: "Yesterday" },
-];
-
 export default function Dashboard() {
-  const [goals, setGoals] = useState(dummyGoals);
-  const [transactions, setTransactions] = useState(dummyTransactions);
-  const [totalSavings, setTotalSavings] = useState(8450);
-  const [streak] = useState(12);
-  const [roundUpsToday, setRoundUpsToday] = useState(2);
+  const { user } = useAuth();
+  const [goals, setGoals] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [totalSavings, setTotalSavings] = useState(0);
+  const [streak] = useState(0);
+  const [roundUpsToday, setRoundUpsToday] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    fetchGoals(user.uid).then(setGoals).catch(console.error);
+    fetchTransactions(user.uid).then((txs) => {
+      setTransactions(txs);
+      setTotalSavings(txs.reduce((s, t) => s + (t.roundUp || 0), 0));
+    }).catch(console.error);
+  }, [user]);
 
   // Payment flow states
   const [paymentModal, setPaymentModal] = useState(null); // contact object or null
@@ -49,7 +47,7 @@ export default function Dashboard() {
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const user = JSON.parse(localStorage.getItem("pennywise_user") || "{}");
+  const displayName = user?.displayName || "there";
 
   // ── Payment flow handlers ──────────────────────────────
 
@@ -70,15 +68,16 @@ export default function Dashboard() {
   const handlePaymentComplete = (paymentData) => {
     setPaymentModal(null);
 
-    // Add to transactions
-    const newTx = {
-      id: Date.now(),
+    // Add to Firestore and local state
+    const txData = {
       desc: `${paymentData.contact.name}`,
       amount: paymentData.amount,
       roundUp: Math.ceil(paymentData.amount / 10) * 10 - paymentData.amount,
       date: "Just now",
     };
-    setTransactions((prev) => [newTx, ...prev]);
+    addTransaction(user.uid, txData)
+      .then((saved) => setTransactions((prev) => [saved, ...prev]))
+      .catch(console.error);
 
     // Show round-up popup
     setRoundUpPopup(paymentData);
@@ -99,7 +98,7 @@ export default function Dashboard() {
       {/* ─── Header ─────────────────────────────────────── */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-white">
-          {greeting}, {user.name?.split(" ")[0] || "there"}! 👋
+          {greeting}, {displayName.split(" ")[0]}! 👋
         </h1>
         <p className="text-slate-400 mt-1 text-sm">
           Pay anyone, save automatically

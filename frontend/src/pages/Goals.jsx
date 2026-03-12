@@ -1,44 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Target } from "lucide-react";
 import GoalCard from "../components/GoalCard";
-// import { getGoals, createGoal, deleteGoal } from "../services/api";
-
-const initialGoals = [
-  { id: 1, name: "iPhone 16", target: 79900, saved: 32000, dailySaving: 800 },
-  { id: 2, name: "Goa Trip", target: 25000, saved: 18500, dailySaving: 400 },
-  { id: 3, name: "PS5 Controller", target: 5900, saved: 4200, dailySaving: 150 },
-  { id: 4, name: "New Sneakers", target: 8500, saved: 1200, dailySaving: 200 },
-  { id: 5, name: "MacBook Air", target: 99900, saved: 15000, dailySaving: 1000 },
-];
+import { useAuth } from "../contexts/AuthContext";
+import { fetchGoals, addGoal, removeGoal } from "../services/firestore";
 
 export default function Goals() {
-  const [goals, setGoals] = useState(initialGoals);
+  const { user } = useAuth();
+  const [goals, setGoals] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", target: "" });
 
-  const handleAdd = (e) => {
+  useEffect(() => {
+    if (!user) return;
+    fetchGoals(user.uid).then(setGoals).catch(console.error);
+  }, [user]);
+
+  const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.name || !form.target) return;
 
-    const newGoal = {
-      id: Date.now(),
+    const goalData = {
       name: form.name,
       target: Number(form.target),
       saved: 0,
       dailySaving: Math.ceil(Number(form.target) / 60),
     };
 
-    setGoals([newGoal, ...goals]);
+    try {
+      const saved = await addGoal(user.uid, goalData);
+      setGoals([saved, ...goals]);
+    } catch (err) {
+      console.error(err);
+    }
     setForm({ name: "", target: "" });
     setShowForm(false);
-
-    // Uncomment when backend is ready:
-    // createGoal(newGoal).then(res => setGoals([res.data, ...goals]));
   };
 
-  const handleDelete = (id) => {
-    setGoals(goals.filter((g) => g.id !== id));
-    // deleteGoal(id);
+  const handleDelete = async (id) => {
+    try {
+      await removeGoal(id);
+      setGoals(goals.filter((g) => g.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
