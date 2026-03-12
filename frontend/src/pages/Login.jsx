@@ -23,12 +23,15 @@ export default function Login() {
       const { token, user } = res.data;
 
       localStorage.setItem("token", token);
-      localStorage.setItem(
-        "pennywise_user",
-        JSON.stringify({ name: user.name, email: user.email, id: user.id })
-      );
+      // store full user so we can check profile completeness
+      localStorage.setItem("pennywise_user", JSON.stringify(user));
 
-      navigate("/dashboard");
+      // If profile is incomplete (missing phoneNumber or accountNumber), send to setup
+      if (!user.phoneNumber || !user.accountNumber) {
+        navigate("/setup-profile");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Please try again.");
     } finally {

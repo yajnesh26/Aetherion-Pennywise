@@ -30,6 +30,9 @@ export const buyGoal = (id) => API.post(`/goals/${id}/buy`);
 export const makePayment = (data) => API.post("/pay", data);
 export const getTransactions = () => API.get("/transactions");
 
+// User profile
+export const updateProfile = (data) => API.put("/user/profile", data);
+
 // ─── AI Chat (Gemini) ────────────────────────────────────
 export const askAI = (data) => API.post("/ai/ask", data);
 

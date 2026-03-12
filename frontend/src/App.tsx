@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Goals from "./pages/Goals";
 import Chatbot from "./pages/Chatbot";
+import SetupProfile from "./pages/SetupProfile";
 
 function AppLayout() {
   const location = useLocation();
@@ -19,6 +20,7 @@ function AppLayout() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
+  <Route path="/setup-profile" element={<SetupProfile />} />
         <Route path="/goals" element={<Goals />} />
         <Route path="/chat" element={<Chatbot />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

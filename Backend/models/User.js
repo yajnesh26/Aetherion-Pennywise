@@ -26,6 +26,22 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    phoneNumber: {
+      type: String,
+      default: null,
+    },
+    accountNumber: {
+      type: String,
+      default: null,
+    },
+    ifscCode: {
+      type: String,
+      default: null,
+    },
+    upiId: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );

@@ -48,6 +48,10 @@ const register = async (req, res) => {
         name: user.name,
         email: user.email,
         savingsWallet: user.savingsWallet,
+        phoneNumber: user.phoneNumber || null,
+        accountNumber: user.accountNumber || null,
+        ifscCode: user.ifscCode || null,
+        upiId: user.upiId || null,
       },
     });
   } catch (error) {
@@ -105,6 +109,10 @@ const login = async (req, res) => {
         name: user.name,
         email: user.email,
         savingsWallet: user.savingsWallet,
+        phoneNumber: user.phoneNumber || null,
+        accountNumber: user.accountNumber || null,
+        ifscCode: user.ifscCode || null,
+        upiId: user.upiId || null,
       },
     });
   } catch (error) {

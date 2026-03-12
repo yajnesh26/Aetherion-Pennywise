@@ -37,6 +37,7 @@ app.use("/api/goals", require("./routes/goalRoutes"));
 app.use("/api/pay", require("./routes/paymentRoutes"));
 app.use("/api/ai", require("./routes/aiRoutes"));
 app.use("/api/product", require("./routes/productRoutes"));
+app.use("/api/user", require("./routes/userRoutes"));
 
 // GET /api/transactions — proxy to payment routes
 app.use("/api", require("./routes/paymentRoutes"));

@@ -168,7 +168,32 @@ Uses **Google Gemini 2.0 Flash**. If the API is unavailable, falls back to keywo
 
 ---
 
-### 🛒 Product Scraper
+### � User Profile
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `PUT` | `/api/user/profile` | Update logged-in user's phone/account/UPI details | ✅ |
+
+**Request body:**
+```json
+{
+  "phoneNumber": "9876543210",
+  "accountNumber": "123456789012",
+  "ifscCode": "SBIN0001234",
+  "upiId": "user@upi"
+}
+```
+
+**Response:**
+```json
+{ "success": true, "user": { /* updated user object without password */ } }
+```
+
+Phone number is validated to be exactly 10 digits. Account number must be numeric.
+
+---
+
+### �🛒 Product Scraper
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|

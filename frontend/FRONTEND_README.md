@@ -80,6 +80,7 @@ The JWT token is stored in `localStorage` as `token` and automatically attached 
 | `getTransactions()` | GET | `/transactions` | Fetch transaction history |
 | `askAI(data)` | POST | `/ai/ask` | Ask AI assistant |
 | `fetchProduct(data)` | POST | `/product/fetch` | Scrape product from URL |
+| `updateProfile(data)` | PUT | `/user/profile` | Update user's banking/profile details |
 
 ---
 
@@ -88,7 +89,7 @@ The JWT token is stored in `localStorage` as `token` and automatically attached 
 ### `/login` — Login
 - Email + password form → calls `loginUser()`
 - Stores JWT `token` and `pennywise_user` in localStorage
-- Redirects to `/dashboard`
+ - Redirects to `/dashboard` or `/setup-profile` if profile incomplete
 
 ### `/register` — Register
 - Name + email + password form → calls `registerUser()`
@@ -112,6 +113,11 @@ The JWT token is stored in `localStorage` as `token` and automatically attached 
 - Chat interface with Gemini 2.0 Flash
 - Falls back to offline keyword-matched tips if API is down
 - Financial advisor persona focused on savings, budgets & investments
+
+### `/setup-profile` — Setup profile
+- New onboarding page shown to users who haven't completed profile details.
+- Fields: Phone Number, Account Number, IFSC Code, UPI ID
+- Calls `updateProfile()` and redirects to `/dashboard` on success
 
 ---
 
