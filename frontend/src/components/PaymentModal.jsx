@@ -11,18 +11,27 @@ const avatarColors = [
 export default function PaymentModal({ contact, onClose, onPayment }) {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState(contact?.phone || "");
   const [processing, setProcessing] = useState(false);
 
   const handlePay = async () => {
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) return;
 
+    // Validate phone number (10 digits)
+    const cleaned = String(phoneNumber || "").replace(/\D/g, "");
+    if (!/^\d{10}$/.test(cleaned)) {
+      // simple inline alert — keep UI consistent with modal style
+      alert("Please enter a valid 10-digit phone number");
+      return;
+    }
+
     setProcessing(true);
     // Simulate payment processing
     await new Promise((r) => setTimeout(r, 1200));
     setProcessing(false);
 
-    onPayment?.({ contact, amount: numAmount, note });
+    onPayment?.({ phoneNumber: cleaned, contact, amount: numAmount, description: note });
   };
 
   const quickAmounts = [100, 200, 500, 1000, 2000, 5000];
@@ -76,6 +85,15 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
             className="w-full pl-12 pr-4 py-4 bg-slate-800/80 border border-slate-700/60 rounded-2xl text-white text-3xl font-bold placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
         </div>
+
+        {/* Phone number input */}
+        <input
+          type="tel"
+          value={phoneNumber}
+          onChange={(e) => setPhoneNumber(e.target.value)}
+          placeholder="Phone number (10 digits)"
+          className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700/40 rounded-xl text-white text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/30 transition-all mb-4"
+        />
 
         {/* Quick amount chips */}
         <div className="flex flex-wrap gap-2 mb-4">

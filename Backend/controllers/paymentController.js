@@ -64,7 +64,12 @@ function calculateSmartRoundUp(amount) {
 const makePayment = async (req, res) => {
   try {
 
-    const { amount, description } = req.body;
+    const { amount, description, phoneNumber } = req.body;
+
+    // Validate phone number
+    if (!phoneNumber || !/^\d{10}$/.test(String(phoneNumber))) {
+      return res.status(400).json({ success: false, message: "Invalid phone number" });
+    }
 
     if (!amount || amount <= 0) {
       return res.status(400).json({
@@ -79,9 +84,10 @@ const makePayment = async (req, res) => {
     const { roundedAmount, savedAmount } =
       calculateSmartRoundUp(originalAmount);
 
-    // Create transaction
+    // Create transaction (store phoneNumber)
     const transaction = await Transaction.create({
       user: req.user._id,
+      phoneNumber: String(phoneNumber),
       description: description || "Payment",
       originalAmount,
       roundedAmount,
@@ -101,10 +107,16 @@ const makePayment = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      transaction,
-      roundUpSaved: savedAmount,
+      transaction: {
+        phoneNumber: transaction.phoneNumber,
+        originalAmount: transaction.originalAmount,
+        roundedAmount: transaction.roundedAmount,
+        savedAmount: transaction.savedAmount,
+        description: transaction.description,
+        createdAt: transaction.createdAt,
+      },
       savingsWallet: user.savingsWallet,
-      message: `₹${savedAmount} spare change saved to your wallet!`
+      message: `₹${savedAmount} spare change saved from your payment!`
     });
 
   } catch (error) {

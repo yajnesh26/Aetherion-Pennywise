@@ -12,6 +12,16 @@ const transactionSchema = new mongoose.Schema(
       required: [true, "Transaction description is required"],
       trim: true,
     },
+    phoneNumber: {
+      type: String,
+      required: [true, "Phone number is required"],
+      validate: {
+        validator: function (v) {
+          return /^\d{10}$/.test(v);
+        },
+        message: (props) => `${props.value} is not a valid 10-digit phone number!`,
+      },
+    },
     originalAmount: {
       type: Number,
       required: [true, "Original amount is required"],

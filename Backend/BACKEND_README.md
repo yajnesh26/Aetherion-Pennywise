@@ -121,7 +121,7 @@ All protected routes require the header:
 
 **Payment body:**
 ```json
-{ "amount": 87, "description": "Coffee" }
+{ "phoneNumber": "9876543210", "amount": 87, "description": "Coffee" }
 ```
 
 **Response:**
@@ -129,14 +129,15 @@ All protected routes require the header:
 {
   "success": true,
   "transaction": {
+    "phoneNumber": "9876543210",
     "originalAmount": 87,
-    "roundedAmount": 96,
-    "savedAmount": 9,
-    "description": "Coffee"
+    "roundedAmount": 100,
+    "savedAmount": 13,
+    "description": "Coffee",
+    "createdAt": "2026-03-13T12:34:56.789Z"
   },
-  "roundUpSaved": 9,
-  "savingsWallet": 142,
-  "message": "₹9 spare change saved to your wallet!"
+  "savingsWallet": 19,
+  "message": "₹13 spare change saved from your payment!"
 }
 ```
 

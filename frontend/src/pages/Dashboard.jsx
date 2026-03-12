@@ -96,23 +96,25 @@ export default function Dashboard() {
     setPaymentModal(null);
 
     try {
+
       const res = await makePayment({
+        phoneNumber: paymentData.phoneNumber,
         amount: paymentData.amount,
-        description: paymentData.contact?.name || "Payment",
+        description: paymentData.description || paymentData.contact?.name || "Payment",
       });
 
-      const { roundUpSaved, savingsWallet } = res.data;
+      const { transaction, savingsWallet } = res.data;
 
       // Update wallet balance
       setTotalSavings(savingsWallet);
 
-      // Store round-up info for popup
+      // Store round-up info for popup (backend-driven)
       setRoundUpInfo({
-        savedAmount: roundUpSaved,
+        savedAmount: transaction.savedAmount,
         walletBalance: savingsWallet,
       });
 
-      // Show round-up popup
+      // Show round-up popup (pass payment details so popup can mention recipient)
       setRoundUpPopup(paymentData);
 
       // Trigger transaction list refresh
