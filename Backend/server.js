@@ -15,6 +15,22 @@ const app = express();
 // ── Middleware ─────────────────────────────────────────────
 app.use(cors()); // Allow cross-origin requests from React frontend
 app.use(express.json()); // Parse JSON request bodies
+const session = require("express-session");
+const passport = require("passport");
+// Initialize passport strategies
+require("./config/passport")(passport);
+
+// Session is required by passport for OAuth flows
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || process.env.JWT_SECRET || "session_secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false },
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
 
 // ── Health-check route ────────────────────────────────────
 app.get("/", (_req, res) => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Wallet, Mail, Lock, ArrowRight } from "lucide-react";
 import { loginUser } from "../services/api";
@@ -8,6 +8,23 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // If redirected back from Google OAuth with token in query, store it and redirect
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tokenFromQuery = params.get("token");
+      if (tokenFromQuery) {
+        // store token and remove token param from URL
+        localStorage.setItem("token", tokenFromQuery);
+        // Optionally fetch user info later; for now redirect to dashboard
+        window.history.replaceState({}, document.title, window.location.pathname);
+        navigate("/dashboard");
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -57,6 +74,22 @@ export default function Login() {
 
         {/* Card */}
         <div className="bg-slate-800/60 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/20 border border-slate-700/50 p-8">
+          {/* Google OAuth */}
+          <div className="mb-4">
+            <button
+              onClick={() => (window.location.href = "http://localhost:5000/api/auth/google")}
+              className="w-full py-3 px-4 bg-white/8 text-white font-semibold rounded-xl hover:bg-white/12 transition-all flex items-center justify-center gap-3 mb-3"
+            >
+              <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center text-sm font-bold text-black">G</div>
+              Continue with Google
+            </button>
+
+            <div className="flex items-center gap-3 text-slate-500 text-sm mt-2 mb-3">
+              <div className="flex-1 h-px bg-slate-700/40" />
+              <div>OR</div>
+              <div className="flex-1 h-px bg-slate-700/40" />
+            </div>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
