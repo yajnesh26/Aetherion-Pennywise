@@ -1,28 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, Sparkles } from "lucide-react";
 import ChatMessage from "../components/ChatMessage";
-// import { sendChatMessage } from "../services/api";
-
-const aiResponses = {
-  default:
-    "That's a great question! Based on your spending patterns, I'd suggest setting up automatic round-ups on all transactions and creating small daily savings goals. Even ₹50/day adds up to ₹18,250 in a year!",
-  save: "Here are some proven ways to save money faster:\n\n1. **Round-up every transaction** — PennyWise does this automatically!\n2. **Set specific goals** — Visual progress bars keep you motivated.\n3. **Cut subscriptions** you don't use.\n4. **Follow the 50/30/20 rule** — 50% needs, 30% wants, 20% savings.\n5. **Cook more at home** — You could save ₹3000-5000/month!",
-  invest:
-    "For ₹500, here are smart micro-investment options:\n\n1. **SIP in Index Funds** — Start a monthly SIP in Nifty 50 index funds.\n2. **Digital Gold** — Buy small amounts of gold starting from ₹1.\n3. **Liquid Funds** — Better than savings accounts, easy to withdraw.\n4. **Government Bonds** — Safe and steady returns via RBI Retail Direct.\n\nStart small and stay consistent — that's the key!",
-  budget:
-    "Let me help you create a budget! Based on your recent transactions:\n\n• **Food & Dining**: ₹4,200 (consider reducing by 20%)\n• **Transport**: ₹1,800 (try carpooling!)\n• **Shopping**: ₹3,500 (set a monthly limit)\n• **Subscriptions**: ₹899 (audit these quarterly)\n\nYour potential monthly savings: ₹2,100 more!",
-};
-
-function getAIResponse(message) {
-  const lower = message.toLowerCase();
-  if (lower.includes("save") || lower.includes("saving"))
-    return aiResponses.save;
-  if (lower.includes("invest") || lower.includes("₹"))
-    return aiResponses.invest;
-  if (lower.includes("budget") || lower.includes("spend"))
-    return aiResponses.budget;
-  return aiResponses.default;
-}
+import { sendChatMessage } from "../services/api";
 
 const suggestions = [
   "How can I save money faster?",
@@ -51,23 +30,37 @@ export default function Chatbot() {
     const userMsg = text || input.trim();
     if (!userMsg) return;
 
+    // Add user message to UI
     const newUserMsg = { id: Date.now(), role: "user", text: userMsg };
     setMessages((prev) => [...prev, newUserMsg]);
     setInput("");
     setTyping(true);
 
-    // Simulate AI delay
-    setTimeout(() => {
-      // Uncomment when backend is ready:
-      // const res = await sendChatMessage({ message: userMsg });
-      const aiText = getAIResponse(userMsg);
+    try {
+      // Prepare chat history for Backend
+      const chatHistory = messages
+        .filter(m => m.id !== 1)
+        .map(m => ({
+          role: m.role === "user" ? "user" : "assistant",
+          content: m.text,
+        }));
+
+      // Get real response from Backend
+      const aiText = await sendChatMessage(userMsg, chatHistory);
 
       setMessages((prev) => [
         ...prev,
         { id: Date.now() + 1, role: "assistant", text: aiText },
       ]);
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now() + 1, role: "assistant", text: "Something went wrong. Please try again." },
+      ]);
+    } finally {
       setTyping(false);
-    }, 1000 + Math.random() * 1000);
+    }
   };
 
   const handleSubmit = (e) => {

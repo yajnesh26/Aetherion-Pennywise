@@ -1,0 +1,33 @@
+# Node
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.npm
+
+# Build
+dist/
+dist-ssr/
+*.local
+build/
+
+# Environment
+.env
+.env.production
+.env.development
+**/.env
+**/.env.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Misc
+model_list.txt
+debug_gemini_v*
+model_list.txt
