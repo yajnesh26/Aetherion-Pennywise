@@ -3,100 +3,13 @@ import {
   Link2,
   Search,
   Loader2,
-  ShoppingBag,
   Plus,
   AlertCircle,
   ExternalLink,
   ImageOff,
   X,
 } from "lucide-react";
-
-// ── Simulated product database (replace with real scraper / API later) ──
-const MOCK_PRODUCTS = {
-  "amazon.in": [
-    {
-      pattern: /sneaker|shoe|nike|adidas|puma/i,
-      name: "Nike Air Max 90",
-      price: 3499,
-      image:
-        "https://m.media-amazon.com/images/I/71GZNHP+XAL._AC_SL1500_.jpg",
-    },
-    {
-      pattern: /headphone|earphone|buds|sony|jbl|boat/i,
-      name: "Sony WH-1000XM5 Wireless Headphones",
-      price: 2499,
-      image:
-        "https://m.media-amazon.com/images/I/51aXvjzcukL._AC_SL1500_.jpg",
-    },
-    {
-      pattern: /controller|gamepad|ps5|xbox/i,
-      name: "PS5 DualSense Wireless Controller",
-      price: 5899,
-      image:
-        "https://m.media-amazon.com/images/I/61lsPklJzAL._AC_SL1500_.jpg",
-    },
-    {
-      pattern: /watch|smartwatch|band/i,
-      name: "Apple Watch SE (2nd Gen)",
-      price: 24900,
-      image:
-        "https://m.media-amazon.com/images/I/71lmOluzBFL._AC_SL1500_.jpg",
-    },
-    {
-      pattern: /bat|cricket/i,
-      name: "SG English Willow Cricket Bat",
-      price: 1799,
-      image:
-        "https://m.media-amazon.com/images/I/41WjQoL5lNL._AC_SL1200_.jpg",
-    },
-    {
-      pattern: /keyboard|mechanical/i,
-      name: "Cosmic Byte CB-GK-18 Mechanical Keyboard",
-      price: 2799,
-      image:
-        "https://m.media-amazon.com/images/I/61CGHv6kmWL._AC_SL1000_.jpg",
-    },
-  ],
-  "flipkart.com": [
-    {
-      pattern: /phone|mobile|samsung|iphone|pixel/i,
-      name: "Samsung Galaxy S24 FE 5G",
-      price: 29999,
-      image:
-        "https://rukminim2.flatsatic.com/image/416/416/xif0q/mobile/q/h/o/-original-imah4zz8gzqnihyg.jpeg",
-    },
-    {
-      pattern: /laptop|notebook|macbook|lenovo/i,
-      name: "Lenovo IdeaPad Slim 3",
-      price: 42990,
-      image:
-        "https://rukminim2.flatsatic.com/image/416/416/xif0q/computer/q/a/o/-original-imah4zz8rwzeh8hr.jpeg",
-    },
-    {
-      pattern: /sneaker|shoe|nike|adidas/i,
-      name: "Adidas Ultraboost Light Running Shoes",
-      price: 4299,
-      image:
-        "https://rukminim2.flatsatic.com/image/416/416/xif0q/shoe/m/n/x/-original-imah4zz8eqwufhvc.jpeg",
-    },
-  ],
-};
-
-/**
- * Simulate fetching product data from a URL.
- * In production, replace with a real backend scraper endpoint.
- */
-async function simulateFetch(url) {
-  const res = await fetch(
-    `http://localhost:5000/fetch-product?url=${encodeURIComponent(url)}`
-  );
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch product");
-  }
-
-  return res.json();
-}
+import { fetchProduct } from "../services/api";
 
 /**
  * AddGoalFromLink — paste a product URL and auto-extract name, price, and image.
@@ -110,6 +23,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [product, setProduct] = useState(null); // fetched product
+  const [partial, setPartial] = useState(false); // true = URL-slug fallback
   const [manualPrice, setManualPrice] = useState("");
   const [nickname, setNickname] = useState("");
   const [imgError, setImgError] = useState(false);
@@ -119,15 +33,30 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
     setLoading(true);
     setError("");
     setProduct(null);
+    setPartial(false);
     setManualPrice("");
     setNickname("");
     setImgError(false);
 
     try {
-      const data = await simulateFetch(url.trim());
-      setProduct(data);
+      const res = await fetchProduct({ url: url.trim() });
+
+      if (res.data.success && res.data.product) {
+        setProduct(res.data.product);
+        setPartial(!!res.data.partial);
+
+        // If price was null from scraper, prompt manual entry
+        if (!res.data.product.price) {
+          setManualPrice("");
+        }
+      } else {
+        setError(res.data.message || "Could not fetch product data.");
+      }
     } catch (err) {
-      setError(err.message || "Could not fetch product data.");
+      const msg =
+        err.response?.data?.message ||
+        "Failed to fetch product. Check the URL and try again.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -143,7 +72,10 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
   const handleAddGoal = () => {
     if (!product) return;
     const price = manualPrice ? Number(manualPrice) : product.price;
-    if (!price || price <= 0) return;
+    if (!price || price <= 0) {
+      setError("Please enter a valid price to continue.");
+      return;
+    }
 
     onAddGoal({
       name: nickname || product.name,
@@ -156,6 +88,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
     setUrl("");
     setProduct(null);
     setManualPrice("");
+    setNickname("");
     setError("");
   };
 
@@ -273,6 +206,16 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
                   </a>
                 </div>
 
+                {/* Partial-data banner */}
+                {partial && (
+                  <div className="mb-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="text-[10px] text-amber-400">
+                      The site blocked full scraping — name was extracted from the URL. Please verify & enter the price manually.
+                    </span>
+                  </div>
+                )}
+
                 {/* Product name */}
                 <h4 className="text-sm font-bold text-white leading-snug mb-3">
                   {product.name}
@@ -295,26 +238,39 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
 
                 {/* Price */}
                 <div className="flex items-baseline gap-2 mb-3">
-                  <span className="text-xl font-bold text-emerald-400 font-mono">
-                    ₹{product.price.toLocaleString("en-IN")}
-                  </span>
-                  <span className="text-[10px] text-slate-500">
-                    Extracted price
-                  </span>
+                  {product.price ? (
+                    <>
+                      <span className="text-xl font-bold text-emerald-400 font-mono">
+                        ₹{product.price.toLocaleString("en-IN")}
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        Extracted price
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-amber-400 font-semibold">
+                      ⚠️ Price not found — please enter manually below
+                    </span>
+                  )}
                 </div>
 
                 {/* Manual price override */}
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-slate-500">
-                    Price not right?
+                    {product.price ? "Price not right?" : "Enter target price (₹)"}
                   </span>
                   <input
                     type="number"
                     value={manualPrice}
                     onChange={(e) => setManualPrice(e.target.value)}
-                    placeholder="Enter manually"
+                    placeholder={product.price ? "Override price" : "e.g. 2999"}
                     min="1"
-                    className="w-36 px-3 py-1.5 rounded-lg bg-slate-800/70 border border-slate-600/40 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none text-xs text-white placeholder-slate-600 transition-all"
+                    className={`w-36 px-3 py-1.5 rounded-lg bg-slate-800/70 border focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none text-xs text-white placeholder-slate-600 transition-all ${
+                      !product.price
+                        ? "border-amber-500/50 ring-1 ring-amber-500/20"
+                        : "border-slate-600/40"
+                    }`}
+                    autoFocus={!product.price}
                   />
                 </div>
               </div>

@@ -1,21 +1,22 @@
 import { useState } from "react";
 import { CheckCircle2, PiggyBank, ArrowUp, X, Sparkles } from "lucide-react";
 
-export default function RoundUpPopup({ payment, onSave, onSkip }) {
+export default function RoundUpPopup({ payment, roundUpInfo, onSave, onSkip }) {
   const [saved, setSaved] = useState(false);
 
   const original = payment?.amount || 0;
-  const roundedUp = Math.ceil(original / 10) * 10;
-  const spare = roundedUp - original;
 
-  // If there's no spare change (exact multiple of 10), show a small auto-save suggestion
+  // Use real values from the backend API instead of recalculating locally
+  const spare = roundUpInfo?.savedAmount || 0;
+  const roundedUp = original + spare;
+  const walletBalance = roundUpInfo?.walletBalance || 0;
+
   const hasSavings = spare > 0;
-  const suggestedSave = hasSavings ? spare : 10;
 
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => {
-      onSave?.({ amount: suggestedSave, original, roundedUp });
+      onSave?.({ amount: spare, original, roundedUp });
     }, 1000);
   };
 
@@ -79,7 +80,7 @@ export default function RoundUpPopup({ payment, onSave, onSkip }) {
                 Your payment was an exact amount.
               </p>
               <p className="text-slate-300 text-sm">
-                Save a quick <span className="text-emerald-400 font-bold">₹{suggestedSave}</span> to your goals?
+                No spare change this time.
               </p>
             </div>
           )}
@@ -99,7 +100,7 @@ export default function RoundUpPopup({ payment, onSave, onSkip }) {
               className="flex-1 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.97] flex items-center justify-center gap-1.5"
             >
               <PiggyBank className="w-4 h-4" />
-              Save ₹{suggestedSave}
+              Save ₹{spare}
             </button>
           </div>
         ) : (

@@ -7,7 +7,7 @@ const API = axios.create({
   },
 });
 
-// Attach token to every request if available
+// ── Attach JWT token to every request ─────────────────────
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -24,15 +24,16 @@ export const registerUser = (data) => API.post("/auth/register", data);
 export const getGoals = () => API.get("/goals");
 export const createGoal = (data) => API.post("/goals", data);
 export const deleteGoal = (id) => API.delete(`/goals/${id}`);
+export const buyGoal = (id) => API.post(`/goals/${id}/buy`);
 
-// ─── Transactions / Round-Up ─────────────────────────────
+// ─── Payments / Transactions ─────────────────────────────
+export const makePayment = (data) => API.post("/pay", data);
 export const getTransactions = () => API.get("/transactions");
-export const addRoundUp = (data) => API.post("/transactions/roundup", data);
 
-// ─── Dashboard ───────────────────────────────────────────
-export const getDashboard = () => API.get("/dashboard");
+// ─── AI Chat (Gemini) ────────────────────────────────────
+export const askAI = (data) => API.post("/ai/ask", data);
 
-// ─── AI Chat ─────────────────────────────────────────────
-export const sendChatMessage = (data) => API.post("/chat", data);
+// ─── Product Scraper ─────────────────────────────────────
+export const fetchProduct = (data) => API.post("/product/fetch", data);
 
 export default API;

@@ -1,95 +1,169 @@
-import { useState } from "react";
-import { Plus, Target, X, Wallet, Link2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Target, X, Wallet, Link2, Loader2, AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import GoalsTable from "../components/GoalsTable";
 import PredictionGraph from "../components/PredictionGraph";
 import AddGoalFromLink from "../components/AddGoalFromLink";
-// import { getGoals, createGoal, deleteGoal } from "../services/api";
+import { getGoals, createGoal, deleteGoal } from "../services/api";
 
-// ── Dummy data (replace with API later) ───────────────────
-const initialGoals = [
-  {
-    id: 1,
-    name: "Nike Air Max 90",
-    target: 3500,
-    image: "https://m.media-amazon.com/images/I/71GZNHP+XAL._AC_SL1500_.jpg",
-    url: "https://www.amazon.in/dp/B0EXAMPLE1",
-  },
-  {
-    id: 2,
-    name: "Sony WH-1000XM5 Headphones",
-    target: 2500,
-    image: "https://m.media-amazon.com/images/I/51aXvjzcukL._AC_SL1500_.jpg",
-    url: "https://www.amazon.in/dp/B0EXAMPLE2",
-  },
-  {
-    id: 3,
-    name: "SG English Willow Cricket Bat",
-    target: 1800,
-    image: "https://m.media-amazon.com/images/I/41WjQoL5lNL._AC_SL1200_.jpg",
-    url: "https://www.amazon.in/dp/B0EXAMPLE3",
-  },
-  {
-    id: 4,
-    name: "Goa Trip",
-    target: 12000,
-  },
-  {
-    id: 5,
-    name: "PS5 DualSense Controller",
-    target: 5900,
-    image: "https://m.media-amazon.com/images/I/61lsPklJzAL._AC_SL1500_.jpg",
-    url: "https://www.amazon.in/dp/B0EXAMPLE5",
-  },
-];
-
-// Central savings wallet — all savings go here
-const INITIAL_TOTAL_SAVINGS = 2800;
-const AVG_DAILY_SAVING = 75; // average daily saving from round-ups
+// Average daily saving — could be computed from transaction history later
+const AVG_DAILY_SAVING = 75;
 
 export default function Goals() {
-  const [goals, setGoals] = useState(initialGoals);
-  const [totalSavings] = useState(INITIAL_TOTAL_SAVINGS);
+  const navigate = useNavigate();
+  const [goals, setGoals] = useState([]);
+  const [totalSavings, setTotalSavings] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [showForm, setShowForm] = useState(false);
   const [addMode, setAddMode] = useState("manual"); // "manual" | "link"
   const [form, setForm] = useState({ name: "", target: "" });
+  const [saving, setSaving] = useState(false); // submit spinner
 
-  // Selected goal for prediction graph — defaults to first goal
-  const [selectedGoal, setSelectedGoal] = useState(initialGoals[0] || null);
+  // Selected goal for prediction graph
+  const [selectedGoal, setSelectedGoal] = useState(null);
 
-  const handleAdd = (e) => {
+  // ── Fetch goals from backend ─────────────────────────────
+  const fetchGoals = useCallback(async () => {
+    try {
+      setError("");
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      const res = await getGoals();
+      const { goals: apiGoals, savingsWallet } = res.data;
+
+      // Normalize backend → frontend field names
+      const normalized = apiGoals.map((g) => ({
+        id: g._id,
+        name: g.itemName,
+        target: g.targetPrice,
+        image: g.image || null,
+        url: g.url || null,
+      }));
+
+      setGoals(normalized);
+      setTotalSavings(savingsWallet ?? 0);
+
+      if (normalized.length > 0) {
+        setSelectedGoal((prev) => prev || normalized[0]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch goals:", err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+      setError(err.response?.data?.message || "Failed to fetch goals. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    fetchGoals();
+  }, [fetchGoals]);
+
+  // ── Create goal (manual form) ────────────────────────────
+  const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.name || !form.target) return;
 
-    const newGoal = {
-      id: Date.now(),
-      name: form.name,
-      target: Number(form.target),
-    };
+    setSaving(true);
+    setError("");
 
-    setGoals([...goals, newGoal]);
-    setForm({ name: "", target: "" });
-    setShowForm(false);
+    try {
+      const res = await createGoal({
+        itemName: form.name,
+        targetPrice: Number(form.target),
+      });
 
-    // Uncomment when backend is ready:
-    // createGoal(newGoal).then(res => setGoals([...goals, res.data]));
-  };
+      const g = res.data.goal;
+      const newGoal = {
+        id: g._id,
+        name: g.itemName,
+        target: g.targetPrice,
+        image: g.image || null,
+        url: g.url || null,
+      };
 
-  const handleDelete = (id) => {
-    const remaining = goals.filter((g) => g.id !== id);
-    setGoals(remaining);
-
-    if (selectedGoal?.id === id) {
-      setSelectedGoal(remaining.length > 0 ? remaining[0] : null);
+      setGoals((prev) => [...prev, newGoal]);
+      setForm({ name: "", target: "" });
+      setShowForm(false);
+    } catch (err) {
+      console.error("Create goal failed:", err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+      setError(err.response?.data?.message || "Failed to create goal. Please try again.");
+    } finally {
+      setSaving(false);
     }
-    // deleteGoal(id);
   };
 
-  const handleSelect = (goal) => {
-    setSelectedGoal(goal);
+  // ── Create goal from product link ────────────────────────
+  const handleAddFromLink = async ({ name, target, image, url }) => {
+    setSaving(true);
+    setError("");
+
+    try {
+      const res = await createGoal({
+        itemName: name,
+        targetPrice: target,
+        image: image || null,
+        url: url || null,
+      });
+
+      const g = res.data.goal;
+      const newGoal = {
+        id: g._id,
+        name: g.itemName,
+        target: g.targetPrice,
+        image: g.image || null,
+        url: g.url || null,
+      };
+
+      setGoals((prev) => [...prev, newGoal]);
+      setShowForm(false);
+      setAddMode("manual");
+    } catch (err) {
+      console.error("Create goal from link failed:", err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+      setError(err.response?.data?.message || "Failed to create goal. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
+  // ── Delete goal ──────────────────────────────────────────
+  const handleDelete = async (id) => {
+    try {
+      await deleteGoal(id);
+      const remaining = goals.filter((g) => g.id !== id);
+      setGoals(remaining);
+      if (selectedGoal?.id === id) {
+        setSelectedGoal(remaining.length > 0 ? remaining[0] : null);
+      }
+    } catch (err) {
+      console.error("Delete goal failed:", err);
+    }
+  };
+
+  const handleSelect = (goal) => setSelectedGoal(goal);
+
+  // ── Buy — redirect to product URL or show alert ──────────
   const handleBuy = (goal) => {
-    // Redirect to the product URL if available, otherwise show alert
     if (goal.url) {
       window.open(goal.url, "_blank", "noopener,noreferrer");
     } else {
@@ -97,24 +171,30 @@ export default function Goals() {
     }
   };
 
-  const handleAddFromLink = ({ name, target, image, url }) => {
-    const newGoal = {
-      id: Date.now(),
-      name,
-      target,
-      image: image || null,
-      url: url || null,
-    };
-    setGoals([...goals, newGoal]);
-    setShowForm(false);
-    setAddMode("manual");
-  };
-
-  // Stats
   const readyCount = goals.filter((g) => totalSavings >= g.target).length;
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col items-center gap-3">
+        <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+        <p className="text-slate-400 text-sm">Loading your goals…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* ─── Error Banner ───────────────────────────────── */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+          <p className="text-sm text-red-300 flex-1">{error}</p>
+          <button onClick={() => setError("")} className="text-red-400 hover:text-red-300">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* ─── Header ─────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -233,9 +313,11 @@ export default function Goals() {
                 <div className="flex items-end">
                   <button
                     type="submit"
-                    className="w-full sm:w-auto px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-colors text-sm"
+                    disabled={saving}
+                    className="w-full sm:w-auto px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-colors text-sm disabled:opacity-50 flex items-center gap-2"
                   >
-                    Create
+                    {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {saving ? "Creating…" : "Create"}
                   </button>
                 </div>
               </form>

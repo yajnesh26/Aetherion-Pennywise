@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Wallet, Mail, Lock, ArrowRight } from "lucide-react";
-// import { loginUser } from "../services/api";
+import { loginUser } from "../services/api";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -19,18 +19,14 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // ── Offline mode: check localStorage ──
-      // Replace this block with: const res = await loginUser(form); when backend is ready
-      const users = JSON.parse(localStorage.getItem("pennywise_users") || "[]");
-      const user = users.find(
-        (u) => u.email === form.email && u.password === form.password
+      const res = await loginUser(form);
+      const { token, user } = res.data;
+
+      localStorage.setItem("token", token);
+      localStorage.setItem(
+        "pennywise_user",
+        JSON.stringify({ name: user.name, email: user.email, id: user.id })
       );
-      if (!user) {
-        throw { response: { data: { message: "Invalid email or password." } } };
-      }
-      localStorage.setItem("token", "demo-token-" + Date.now());
-      localStorage.setItem("pennywise_user", JSON.stringify({ name: user.name, email: user.email }));
-      // ── End offline mode ──
 
       navigate("/dashboard");
     } catch (err) {

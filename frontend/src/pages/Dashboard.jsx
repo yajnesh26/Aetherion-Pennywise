@@ -1,12 +1,15 @@
-import { useState } from "react";
-import { Clock, ChevronRight, Sparkles } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { ChevronRight, Sparkles, Loader2 } from "lucide-react";
 import PaymentActions from "../components/PaymentActions";
 import ContactCard from "../components/ContactCard";
 import PaymentModal from "../components/PaymentModal";
 import RoundUpPopup from "../components/RoundUpPopup";
 import PriorityGoalCard from "../components/PriorityGoalCard";
+import TransactionList from "../components/TransactionList";
+import { getGoals, makePayment } from "../services/api";
 
-// ── Dummy data (replace with API later) ───────────────────
+// ── Static contacts (could be fetched from backend later) ──
 const dummyContacts = [
   { id: 1, name: "Rahul S.", upi: "rahul@upi" },
   { id: 2, name: "Swiggy", upi: "swiggy@paytm" },
@@ -18,107 +21,118 @@ const dummyContacts = [
   { id: 8, name: "Zomato", upi: "zomato@paytm" },
 ];
 
-const dummyTransactions = [
-  { id: 1, desc: "Swiggy Order", amount: 287, roundUp: 13, date: "Today" },
-  { id: 2, desc: "Uber Ride", amount: 142, roundUp: 8, date: "Today" },
-  { id: 3, desc: "Amazon Purchase", amount: 1263, roundUp: 37, date: "Yesterday" },
-  { id: 4, desc: "Coffee", amount: 85, roundUp: 15, date: "Yesterday" },
-];
-
-// Goal data (mirrors Goals page — replace with shared state/API later)
-const dashboardGoals = [
-  {
-    id: 1,
-    name: "Nike Air Max 90",
-    target: 3500,
-    image: "https://m.media-amazon.com/images/I/71GZNHP+XAL._AC_SL1500_.jpg",
-    url: "https://www.amazon.in/dp/B0EXAMPLE1",
-  },
-  {
-    id: 2,
-    name: "Sony WH-1000XM5 Headphones",
-    target: 2500,
-    image: "https://m.media-amazon.com/images/I/51aXvjzcukL._AC_SL1500_.jpg",
-    url: "https://www.amazon.in/dp/B0EXAMPLE2",
-  },
-  {
-    id: 3,
-    name: "SG English Willow Cricket Bat",
-    target: 1800,
-    image: "https://m.media-amazon.com/images/I/41WjQoL5lNL._AC_SL1200_.jpg",
-    url: "https://www.amazon.in/dp/B0EXAMPLE3",
-  },
-  {
-    id: 4,
-    name: "Goa Trip",
-    target: 12000,
-  },
-  {
-    id: 5,
-    name: "PS5 DualSense Controller",
-    target: 5900,
-    image: "https://m.media-amazon.com/images/I/61lsPklJzAL._AC_SL1500_.jpg",
-    url: "https://www.amazon.in/dp/B0EXAMPLE5",
-  },
-];
-const TOTAL_SAVINGS = 2800;
-
 export default function Dashboard() {
-  const [transactions, setTransactions] = useState(dummyTransactions);
+  const navigate = useNavigate();
+
+  // Data from backend
+  const [goals, setGoals] = useState([]);
+  const [totalSavings, setTotalSavings] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [txRefreshKey, setTxRefreshKey] = useState(0); // bump to re-fetch transactions
 
   // Payment flow states
-  const [paymentModal, setPaymentModal] = useState(null); // contact object or null
-  const [roundUpPopup, setRoundUpPopup] = useState(null); // payment object or null
+  const [paymentModal, setPaymentModal] = useState(null);
+  const [roundUpPopup, setRoundUpPopup] = useState(null);
+  const [roundUpInfo, setRoundUpInfo] = useState(null);
 
-  // Greeting based on time
+  // Greeting
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-
   const user = JSON.parse(localStorage.getItem("pennywise_user") || "{}");
 
-  // ── Payment flow handlers ──────────────────────────────
+  // ── Fetch goals + wallet from backend ────────────────────
+  const fetchData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
 
-  const handleContactPay = (contact) => {
-    setPaymentModal(contact);
-  };
+      const res = await getGoals();
+      const { goals: apiGoals, savingsWallet } = res.data;
+
+      const normalized = apiGoals.map((g) => ({
+        id: g._id,
+        name: g.itemName,
+        target: g.targetPrice,
+        image: g.image || null,
+        url: g.url || null,
+      }));
+
+      setGoals(normalized);
+      setTotalSavings(savingsWallet ?? 0);
+    } catch (err) {
+      console.error("Dashboard fetch failed:", err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // ── Payment flow handlers ────────────────────────────────
+  const handleContactPay = (contact) => setPaymentModal(contact);
 
   const handleActionClick = (actionLabel) => {
     if (actionLabel === "Pay Contacts" || actionLabel === "Send Money") {
       setPaymentModal({ name: "Enter Details", upi: "" });
     } else {
-      setPaymentModal({ name: actionLabel, upi: `${actionLabel.toLowerCase().replace(" ", "")}@upi` });
+      setPaymentModal({
+        name: actionLabel,
+        upi: `${actionLabel.toLowerCase().replace(" ", "")}@upi`,
+      });
     }
   };
 
-  const handlePaymentComplete = (paymentData) => {
+  const handlePaymentComplete = async (paymentData) => {
     setPaymentModal(null);
 
-    const newTx = {
-      id: Date.now(),
-      desc: `${paymentData.contact.name}`,
-      amount: paymentData.amount,
-      roundUp: Math.ceil(paymentData.amount / 10) * 10 - paymentData.amount,
-      date: "Just now",
-    };
-    setTransactions((prev) => [newTx, ...prev]);
+    try {
+      const res = await makePayment({
+        amount: paymentData.amount,
+        description: paymentData.contact?.name || "Payment",
+      });
 
-    // Show round-up popup
-    setRoundUpPopup(paymentData);
+      const { roundUpSaved, savingsWallet } = res.data;
+
+      // Update wallet balance
+      setTotalSavings(savingsWallet);
+
+      // Store round-up info for popup
+      setRoundUpInfo({
+        savedAmount: roundUpSaved,
+        walletBalance: savingsWallet,
+      });
+
+      // Show round-up popup
+      setRoundUpPopup(paymentData);
+
+      // Trigger transaction list refresh
+      setTxRefreshKey((k) => k + 1);
+    } catch (err) {
+      console.error("Payment failed:", err);
+    }
   };
 
-  const handleRoundUpSave = () => {
-    setRoundUpPopup(null);
-  };
+  const handleRoundUpSave = () => setRoundUpPopup(null);
+  const handleRoundUpSkip = () => setRoundUpPopup(null);
 
-  const handleRoundUpSkip = () => {
-    setRoundUpPopup(null);
-  };
-
-  // Total round-ups saved today
-  const todayRoundUps = transactions
-    .filter((tx) => tx.date === "Today" || tx.date === "Just now")
-    .reduce((sum, tx) => sum + tx.roundUp, 0);
+  // ── Loading state ────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 space-y-6">
@@ -131,6 +145,30 @@ export default function Dashboard() {
           Pay anyone, save automatically
         </p>
       </div>
+
+      {/* ─── Savings Wallet Banner ──────────────────────── */}
+      <section>
+        <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-2xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-white">
+              Savings Wallet:{" "}
+              <span className="text-emerald-400">₹{totalSavings.toFixed(0)}</span>
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Every transaction rounds up to the nearest ₹10 — small change, big goals!
+            </p>
+          </div>
+          <a
+            href="/goals"
+            className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 whitespace-nowrap transition-colors"
+          >
+            View Goals →
+          </a>
+        </div>
+      </section>
 
       {/* ─── 1. Quick Payment Actions ───────────────────── */}
       <section>
@@ -162,68 +200,17 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* ─── 3. Round-Up Savings Suggestion ─────────────── */}
-      {todayRoundUps > 0 && (
-        <section>
-          <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-2xl p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5 text-emerald-400" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-white">
-                Round-up savings today: <span className="text-emerald-400">₹{todayRoundUps}</span>
-              </p>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Every transaction rounds up to the nearest ₹10 — small change, big goals!
-              </p>
-            </div>
-            <a
-              href="/goals"
-              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 whitespace-nowrap transition-colors"
-            >
-              View Goals →
-            </a>
-          </div>
-        </section>
-      )}
-
-      {/* ─── 4. Active Priority Goal ───────────────────── */}
+      {/* ─── 3. Active Priority Goal ───────────────────── */}
       <section>
         <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
           Goal Progress
         </h2>
-        <PriorityGoalCard goals={dashboardGoals} totalSavings={TOTAL_SAVINGS} />
+        <PriorityGoalCard goals={goals} totalSavings={totalSavings} />
       </section>
 
-      {/* ─── 5. Recent Transactions ─────────────────────── */}
+      {/* ─── 4. Recent Transactions (live from backend) ─── */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-            Recent Transactions
-          </h2>
-          <Clock className="w-4 h-4 text-slate-600" />
-        </div>
-        <div className="bg-slate-800/50 backdrop-blur rounded-2xl border border-slate-700/40 divide-y divide-slate-700/20">
-          {transactions.slice(0, 8).map((tx) => (
-            <div
-              key={tx.id}
-              className="px-4 py-3.5 flex items-center justify-between hover:bg-slate-800/40 transition-colors"
-            >
-              <div>
-                <p className="text-sm font-medium text-slate-200">{tx.desc}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{tx.date}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-slate-400 font-mono">₹{tx.amount}</p>
-                {tx.roundUp > 0 && (
-                  <p className="text-xs font-semibold text-emerald-400">
-                    +₹{tx.roundUp} saved
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        <TransactionList key={txRefreshKey} limit={8} compact />
       </section>
 
       {/* ─── Modals / Popups ────────────────────────────── */}
@@ -238,6 +225,7 @@ export default function Dashboard() {
       {roundUpPopup && (
         <RoundUpPopup
           payment={roundUpPopup}
+          roundUpInfo={roundUpInfo}
           onSave={handleRoundUpSave}
           onSkip={handleRoundUpSkip}
         />

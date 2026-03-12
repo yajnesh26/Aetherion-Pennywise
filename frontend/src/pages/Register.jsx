@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Wallet, Mail, Lock, User, ArrowRight } from "lucide-react";
-// import { registerUser } from "../services/api";
+import { registerUser } from "../services/api";
 
 export default function Register() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
@@ -19,17 +19,7 @@ export default function Register() {
     setLoading(true);
 
     try {
-      // ── Offline mode: save user to localStorage ──
-      // Replace this block with: await registerUser(form); when backend is ready
-      const users = JSON.parse(localStorage.getItem("pennywise_users") || "[]");
-      const exists = users.find((u) => u.email === form.email);
-      if (exists) {
-        throw { response: { data: { message: "Email already registered." } } };
-      }
-      users.push({ name: form.name, email: form.email, password: form.password });
-      localStorage.setItem("pennywise_users", JSON.stringify(users));
-      // ── End offline mode ──
-
+      await registerUser(form);
       navigate("/login");
     } catch (err) {
       setError(
