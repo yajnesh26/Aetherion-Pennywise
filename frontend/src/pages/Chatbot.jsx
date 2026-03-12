@@ -37,45 +37,43 @@ export default function Chatbot() {
 
     try {
       const res = await askAI({ question: userMsg });
-
-      if (res && res.data) {
-        // API returns { success: true, answer: "..." }
-        const aiText = res.data.answer || (res.data.success === false ? (res.data.message || "Sorry, I couldn't process that.") : "Sorry, I couldn't process that.");
-
+      
+      // Handle API response
+      if (res.data && res.data.success) {
+        const aiText = res.data.answer || "Sorry, I couldn't process that.";
         setMessages((prev) => [
           ...prev,
           { id: Date.now() + 1, role: "assistant", text: aiText },
         ]);
       } else {
+        // Handle error response but still show answer if available
+        const aiText =
+          res.data?.answer ||
+          "⚠️ Something went wrong. Please check your connection and try again.";
         setMessages((prev) => [
           ...prev,
-          { id: Date.now() + 1, role: "assistant", text: "Sorry, I couldn't process that." },
+          {
+            id: Date.now() + 1,
+            role: "assistant",
+            text: aiText,
+          },
         ]);
       }
     } catch (err) {
-      console.error("AI error:", err);
-
-      // If unauthenticated (401), suggest login. Otherwise show fallback message.
-      if (err.response && err.response.status === 401) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            role: "assistant",
-            text: "Please log in to use personalized PennyWise AI features. You can still ask general questions.",
-          },
-        ]);
-      } else {
-        // Use a friendly fallback message encouraging retry
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            role: "assistant",
-            text: "⚠️ The assistant is temporarily unavailable. Try again in a moment — here's a tip: Try asking about saving strategies or budgeting.",
-          },
-        ]);
-      }
+      console.error("AI request error:", err);
+      
+      // Provide a helpful fallback message
+      const fallbackMsg =
+        "🤖 I'm having trouble connecting right now, but here's a tip: PennyWise automatically saves 5–10% of every transaction as spare change. It's like painless saving! Try asking me about round-up savings or how to create a goal.";
+      
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: "assistant",
+          text: fallbackMsg,
+        },
+      ]);
     } finally {
       setTyping(false);
     }

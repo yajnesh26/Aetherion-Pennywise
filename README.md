@@ -54,9 +54,11 @@ cd Aetherion-Pennywise
 ```bash
 cd Backend
 npm install
-# Create a .env file (see Backend/README.md for details)
+# Copy .env.example to .env and edit values (see Backend/README.md for details)
 npm start
 ```
+
+The server will attempt to connect to the URI in `MONGO_URI`; if that variable is missing it defaults to `mongodb://127.0.0.1:27017/pennywise`. Make sure a MongoDB instance is running locally or provide a valid connection string.
 
 Server starts on **http://localhost:5000**
 

@@ -64,6 +64,10 @@ All API calls go through `src/services/api.js` using Axios.
 
 **Base URL:** `http://localhost:5000/api`
 
+You can override this by setting `VITE_API_URL` in a `.env` file at the frontend root:
+```
+VITE_API_URL=https://yourdomain.com/api
+```
 The JWT token is stored in `localStorage` as `token` and automatically attached to every request via an Axios interceptor.
 
 ### Available API Functions
