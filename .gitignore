@@ -31,3 +31,5 @@ build/
 model_list.txt
 debug_gemini_v*
 model_list.txt
+serviceAccountKey.json  
+**/serviceAccountKey.json

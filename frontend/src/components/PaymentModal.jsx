@@ -8,30 +8,45 @@ const avatarColors = [
   "from-amber-500 to-orange-400",
 ];
 
-export default function PaymentModal({ contact, onClose, onPayment }) {
+export default function PaymentModal({ contact, onClose, onPayment, balance = 0 }) {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [manualName, setManualName] = useState("");
+  const [manualUpi, setManualUpi] = useState("");
   const [processing, setProcessing] = useState(false);
+
+  const isManual = contact?.name === "Enter Details" || contact?.name === "Details" || !contact?.upi;
 
   const handlePay = async () => {
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) return;
 
+    if (isManual && (!manualName || !manualUpi)) {
+      alert("Please enter recipient name and UPI ID.");
+      return;
+    }
+
+    const roundUp = Math.ceil(numAmount / 10) * 10 - numAmount;
+    if (numAmount + roundUp > balance) {
+      alert("Insufficient funds in your account.");
+      return;
+    }
+
     setProcessing(true);
-    // Simulate payment processing
     await new Promise((r) => setTimeout(r, 1200));
     setProcessing(false);
 
-    onPayment?.({ contact, amount: numAmount, note });
+    onPayment?.({ 
+      contact: isManual ? { name: manualName, upi: manualUpi } : contact, 
+      amount: numAmount, 
+      note 
+    });
   };
 
   const quickAmounts = [100, 200, 500, 1000, 2000, 5000];
-  const initials = contact?.name
-    ?.split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "??";
+  const initials = isManual 
+    ? (manualName ? manualName.slice(0, 2).toUpperCase() : "??")
+    : (contact?.name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "??");
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center animate-fadeIn">
@@ -51,16 +66,45 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
           <X className="w-5 h-5" />
         </button>
 
-        {/* Contact info */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg">
-            <span className="text-sm font-bold text-white">{initials}</span>
+        {/* Contact info or input fields */}
+        {isManual ? (
+          <div className="space-y-3 mb-6">
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Recipient Name</label>
+              <input
+                type="text"
+                placeholder="e.g. Rahul Sharma"
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700/40 rounded-xl text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all font-medium"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">UPI ID or Phone Number</label>
+              <input
+                type="text"
+                placeholder="username@upi or 9876543210"
+                value={manualUpi}
+                onChange={(e) => setManualUpi(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700/40 rounded-xl text-white text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all font-medium"
+              />
+            </div>
           </div>
-          <div>
-            <p className="text-white font-semibold">{contact?.name}</p>
-            <p className="text-slate-400 text-sm">{contact?.upi || "UPI Payment"}</p>
+        ) : (
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg">
+              <span className="text-sm font-bold text-white">{initials}</span>
+            </div>
+            <div>
+              <p className="text-white font-semibold">{isManual ? (manualName || "New Recipient") : contact?.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-slate-400 text-xs">{isManual ? (manualUpi || "Enter UPI ID") : (contact?.upi || "UPI Payment")}</p>
+                <div className="w-1 h-1 bg-slate-700 rounded-full" />
+                <p className="text-emerald-400/80 text-xs font-medium">Balance: ₹{balance.toLocaleString()}</p>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Amount input */}
         <div className="relative mb-4">

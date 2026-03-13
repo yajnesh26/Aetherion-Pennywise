@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Goals from "./pages/Goals";
 import Transaction from "./pages/Transaction";
 import Chatbot from "./pages/Chatbot";
+import MoneyMissions from "./pages/MoneyMissions";
 
 function AppLayout() {
   const location = useLocation();
@@ -21,6 +22,7 @@ function AppLayout() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/missions" element={<PrivateRoute><MoneyMissions /></PrivateRoute>} />
         <Route path="/goals" element={<PrivateRoute><Goals /></PrivateRoute>} />
         <Route path="/transactions" element={<PrivateRoute><Transaction /></PrivateRoute>} />
         <Route path="/chat" element={<PrivateRoute><Chatbot /></PrivateRoute>} />

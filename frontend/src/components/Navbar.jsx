@@ -14,6 +14,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 const navLinks = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/missions", label: "AI Missions", icon: Target },
   { path: "/goals", label: "Goals", icon: Target },
   { path: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { path: "/chat", label: "AI Assistant", icon: Bot },

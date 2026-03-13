@@ -8,24 +8,48 @@ You are PennyWise AI, a smart financial assistant for the PennyWise app.
 Your goal is to help users manage their money, save better, and understand micro-investments.
 
 Guidelines:
-1. Be encouraging, professional, and helpful.
-2. Focus on savings, budgeting, and micro-investing (e.g., SIPs, Digital Gold, Liquid Funds).
-3. Explain that PennyWise helps users save by rounding up their transactions to the nearest ₹10.
-4. Keep responses concise and use markdown formatting for readability.
-5. Do not provide high-risk financial advice or specific stock picks.
+1. Provide personalized financial insights based on the user's goals, savings, and spending patterns provided in the context.
+2. Be encouraging, professional, and helpful.
+3. Focus on savings, budgeting, and micro-investing (e.g., SIPs, Digital Gold, Liquid Funds).
+4. If asked about the app, explain that PennyWise helps users save by rounding up their transactions to the nearest ₹10.
+5. Keep responses concise and use markdown formatting (bolding, lists) for readability.
+6. Do not provide high-risk financial advice or specific stock picks. Stick to general investment concepts and safe options like Index Funds or Government Bonds.
 `;
 
-const getChatResponse = async (userMessage, chatHistory = []) => {
+const { analyzeSpending } = require('./spendingAnalyzer');
+const { buildFinancialSummary } = require('./financialCoachService');
+
+/**
+ * Builds a readable text summary of the user's financial status.
+ */
+const buildUserContextSummary = (context) => {
+    if (!context) return "";
+    
+    const { bankBalance, walletSavings, goals, transactions } = context;
+    const user = { bankBalance, walletSavings };
+    
+    return buildFinancialSummary(user, goals, transactions);
+};
+
+const getChatResponse = async (userMessage, chatHistory = [], userContext = null) => {
     if (!GROQ_API_KEY) {
         throw new Error("Groq API key is not configured on the server.");
     }
 
     try {
+        const userContextSummary = buildUserContextSummary(userContext);
+        
         const messages = [
             { role: "system", content: SYSTEM_PROMPT },
-            ...chatHistory,
-            { role: "user", content: userMessage },
+            ...chatHistory
         ];
+
+        // Inject data summary as a system message before the user message if available
+        if (userContextSummary) {
+            messages.push({ role: "system", content: `Context for this user: ${userContextSummary}` });
+        }
+
+        messages.push({ role: "user", content: userMessage });
 
         const response = await axios.post(
             `${BASE_URL}/chat/completions`,

@@ -1,88 +1,61 @@
-# 💰 PennyWise — Smart Savings & Micro-Investment
+# 💰 PennyWise — Smart Savings & Micro-Investment Assistant
 
-PennyWise is a modern, high-performance fintech application designed to make saving effortless. It combines a premium user interface with powerful micro-investment logic, enabling users to track goals, manage transactions, and save automatically through intelligent round-ups and an integrated AI Financial Assistant.
-
----
-
-## 🏗️ Project Architecture
-
-The project follows a decoupled **Client-Server** architecture:
-
-- **Frontend**: A React single-page application (SPA) focused on user experience, real-time tracking, and dashboard management.
-- **Backend**: A Node.js/Express server that handles secure API communication, AI processing, and sensitive data masking.
+PennyWise is a production-ready, full-stack fintech platform designed to automate savings. It uses a premium, high-performance interface to help users visualize their financial goals and save money automatically through intelligent transaction round-ups and AI-driven insights.
 
 ---
 
-## ✨ Key Features
+## 🏗️ Technical Architecture
 
-- **🚀 Instant Dashboard**: A Google Pay/CRED-inspired home screen for quick actions and overview.
-- **📈 Goal Tracking**: Create and manage specific savings targets (e.g., "New Laptop", "Emergency Fund") with visual progress bars.
-- **🔄 Smart Round-Ups**: Automatically calculates "spare change" from transactions and adds them to your savings.
-- **🤖 AI Financial Assistant**: An integrated chatbot powered by **Groq AI** that provides savings tips and financial insights.
-- **🔒 Secure Authentication**: Robust user management powered by Firebase Auth.
-- **📱 Premium UX**: Dark-mode first design using glassmorphism, fluid animations (Lucide), and a mobile-responsive layout.
+This project is built using a modern **Client-Server** architecture to ensure security, high performance, and scalability.
+
+- **Frontend (Client)**: A high-performance React 19 application built with Vite and Tailwind CSS v4. It focuses on premium UX, real-time data visualization, and interactive goal management.
+- **Backend (Server)**: A Node.js/Express proxy server. It secures sensitive operations, manages AI API communication (Groq), and acts as a gateway for future third-party integrations (UPI/Banking).
+
+---
+
+## ✨ Features Implemented (Current State)
+
+### 📊 1. Premium Financial Dashboard
+- **Modern Fintech UI**: Inspired by CRED and Google Pay, featuring Glassmorphism, subtle gradients, and dark-mode optimization.
+- **AI Insight Panel**: Live dashboard section analyzing spending habits and providing actionable financial advice.
+- **Quick Actions**: One-tap access to pay contacts, send money, or scan QR. Supports manual recipient entry (Name/UPI).
+- **Micro-animations**: Smooth transitions and progress animations for an engaging experience.
+
+### 🎯 2. "Dream Tracker" Goal Management
+- **Smart Goal Cards**: Displays product name, target price, current progress, and remaining days to achieve the goal.
+- **Product Integration**: Paste Amazon/Flipkart links to track specific items; includes automatic URL normalization and "Buy Now" redirection.
+- **Advanced Metrics**: Real-time calculation of "Remaining Amount" and the required "Daily Saving Rate" to reach goals within 60 days.
+
+### 📈 3. Data Visualization & Projections
+- **Savings Projection Graph**: Integrated **Recharts** to visualize future savings trajectories based on real-world historical data.
+- **Dynamic Analysis**: Automatically calculates your average daily saving rate from transaction history to predict achievement dates.
+- **Interactive Tooltips**: Detailed hover-states showing projected savings for any future day.
+
+### 🤖 4. AI Student Financial Coach
+- **Engine**: Powered by **Groq AI (Llama 3.3)** for context-aware financial guidance.
+- **Spending Pattern Analyzer**: Analyzes transactions by category (Food, Shopping, etc.) and generates insights if specific categories exceed healthy limits (e.g., >30% spending).
+- **Goal Motivation**: Intelligent system providing motivational nudges like "Only ₹350 more to unlock your goal!"
+
+### 🔄 5. Interactive Savings Allocation
+- **Manual Goal Selection**: Users now choose exactly which goal to fund after a successful round-up, giving full control over savings.
+- **Transaction Linking**: Firestore tracks which transaction funded which goal for a complete audit trail.
+
+### 🔒 6. Security & Authentication
+- **Firebase Auth**: Fully implemented Email/Password registration and login.
+- **Private Env Management**: Decoupled `.env` files for frontend (Firebase keys) and backend (AI keys).
+- **Git Protection**: Robust `.gitignore` preventing sensitive keys or `node_modules` from being pushed to public repositories.
 
 ---
 
 ## 🛠️ Technology Stack
 
-### **Frontend**
-- **Core**: [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
-- **Build Tool**: [Vite 8](https://vitejs.dev/)
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
-- **Database & Auth**: [Firebase](https://firebase.google.com/) (Firestore + Authentication)
-- **Icons**: [Lucide React](https://lucide.dev/)
-
-### **Backend**
-- **Core**: [Node.js](https://nodejs.org/) + [Express](https://expressjs.com/)
-- **Environment**: [Nodemon](https://nodemon.io/) + [Dotenv](https://github.com/motdotla/dotenv)
-- **AI Integration**: [Groq AI API](https://groq.com/)
-- **HTTP Client**: [Axios](https://axios-http.com/)
-
----
-
-## 🚀 Getting Started
-
-### 1. Prerequisites
-Ensure you have [Node.js](https://nodejs.org/) (v18+) and `npm` installed.
-
-### 2. Installation
-Clone the repository and install dependencies for both parts:
-
-**Backend Setup:**
-```bash
-cd backend
-npm install
-```
-
-**Frontend Setup:**
-```bash
-cd ../frontend
-npm install
-```
-
----
-
-## ⚙️ Environment Configuration
-
-### **Backend (.env)**
-Create a `.env` file in the `backend` folder:
-```env
-PORT=5000
-GROQ_API_KEY=your_groq_api_key_here
-```
-
-### **Frontend (.env)**
-Create a `.env` file in the `frontend` folder:
-```env
-VITE_FIREBASE_API_KEY=your_firebase_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-VITE_API_URL=http://localhost:5000/api
-```
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React 19, Vite, Tailwind CSS v4, Recharts, Lucide React, Framer Motion |
+| **Backend** | Node.js, Express, Axios, Dotenv, Groq SDK |
+| **Database** | Firebase Firestore (NoSQL) |
+| **Auth** | Firebase Authentication |
+| **AI** | Groq API (Llama-3.3-70b-versatile) |
 
 ---
 
@@ -90,49 +63,44 @@ VITE_API_URL=http://localhost:5000/api
 
 ```text
 Aetherion-Pennywise/
-├── backend/               # Node.js Server
-│   ├── routes/           # Express API endpoints
-│   ├── services/         # Business logic (AI processing)
-│   ├── .env              # Backend secrets
+├── backend/               # Express Server
+│   ├── services/         # AI Logic & Spending Analyzer
+│   ├── routes/           # Secure API endpoints
 │   └── index.js          # Entry point
-├── frontend/              # React Application
+├── frontend/              # Vite + React Client
 │   ├── src/
-│   │   ├── components/   # UI components
-│   │   ├── pages/        # Main screens (Dashboard, AI Chat)
-│   │   ├── services/     # Firebase & Backend API calls
-│   │   └── App.tsx       # Routing
-│   ├── .env              # Frontend config
-│   └── vite.config.ts    # Vite settings
-└── README.md              # Documentation
+│   │   ├── components/   # UI: GoalCard, SavingsChart, RoundUpPopup
+│   │   ├── pages/        # Dashboard, Goals, AI Chat
+│   │   ├── utils/        # Projection & Analytics logic
+│   │   └── services/     # Firebase & Backend API calls
+└── README.md              # Project Documentation
 ```
 
 ---
 
-## 🏃‍♂️ Running the Application
+## 🚀 Deployment & Local Setup
 
-You will need two terminals running simultaneously:
+### **1. Setup Backend**
+```bash
+cd backend
+npm install
+# Create .env with: PORT=5000, GROQ_API_KEY=your_key
+npm run dev
+```
 
-1. **Terminal 1 (Backend):**
-   ```bash
-   cd backend
-   npm run dev
-   ```
-
-2. **Terminal 2 (Frontend):**
-   ```bash
-   cd frontend
-   npm run dev
-   ```
-
----
-
-## 📝 Roadmap
-- [ ] Integration with real-world UPI APIs.
-- [ ] Advanced data visualization (Heatmaps for spending).
-- [ ] Multi-currency support.
-- [ ] Push notifications for savings goals.
+### **2. Setup Frontend**
+```bash
+cd frontend
+npm install
+# Create .env with: VITE_FIREBASE_* keys and VITE_API_URL=http://localhost:5000/api
+npm run dev
+```
 
 ---
 
-## 📄 License
-This project is licensed under the ISC License.
+## 📝 Planned Roadmap
+- [x] **Data Visualization**: Recharts integration for savings projections.
+- [x] **Category Analysis**: Spending pattern insights.
+- [x] **Interactive Allocation**: Manual goal selection for savings.
+- [ ] **Investment Simulation**: Real-time tracking of "Digital Gold" price.
+- [ ] **Notification System**: Push alerts for goal milestones.

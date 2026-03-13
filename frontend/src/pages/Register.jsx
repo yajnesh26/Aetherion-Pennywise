@@ -1,10 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Wallet, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Wallet, Mail, Lock, User, ArrowRight, CreditCard, Landmark, IndianRupee } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Register() {
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    accountNumber: "",
+    ifscCode: "",
+    bankBalance: "",
+  });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -20,7 +27,14 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await register(form.name, form.email, form.password);
+      await register(
+        form.name,
+        form.email,
+        form.password,
+        form.accountNumber,
+        form.ifscCode,
+        form.bankBalance
+      );
       navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Registration failed. Please try again.");
@@ -101,6 +115,69 @@ export default function Register() {
                   required
                   minLength={6}
                   placeholder="Minimum 6 characters"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm text-white placeholder-slate-500 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Bank Info Section */}
+            <div className="pt-2">
+              <div className="h-px bg-slate-700/50 w-full mb-5" />
+              <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-4">Bank Information</p>
+            </div>
+
+            {/* Account Number */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Account Number
+              </label>
+              <div className="relative">
+                <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  type="text"
+                  name="accountNumber"
+                  value={form.accountNumber}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter 12-16 digit number"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm text-white placeholder-slate-500 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* IFSC Code */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                IFSC Code
+              </label>
+              <div className="relative">
+                <Landmark className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  type="text"
+                  name="ifscCode"
+                  value={form.ifscCode}
+                  onChange={handleChange}
+                  required
+                  placeholder="SBIN0012345"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm text-white placeholder-slate-500 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Initial Balance */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Starting Bank Balance
+              </label>
+              <div className="relative">
+                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  type="number"
+                  name="bankBalance"
+                  value={form.bankBalance}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g. 50000"
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm text-white placeholder-slate-500 transition-all"
                 />
               </div>

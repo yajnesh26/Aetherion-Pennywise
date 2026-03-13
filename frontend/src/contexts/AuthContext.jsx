@@ -30,13 +30,18 @@ export default function AuthProvider({ children }) {
   const login = (email, password) =>
     signInWithEmailAndPassword(auth, email, password);
 
-  const register = async (name, email, password) => {
+  const register = async (name, email, password, accountNumber, ifscCode, bankBalance) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: name });
     // Store profile in Firestore for easy querying
     await setDoc(doc(db, "users", cred.user.uid), {
+      uid: cred.user.uid,
       name,
       email,
+      accountNumber,
+      ifscCode,
+      bankBalance: Number(bankBalance),
+      walletSavings: 0,
       createdAt: new Date().toISOString(),
     });
     return cred;

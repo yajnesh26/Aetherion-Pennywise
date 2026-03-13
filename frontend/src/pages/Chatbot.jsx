@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Bot, Sparkles } from "lucide-react";
 import ChatMessage from "../components/ChatMessage";
 import { sendChatMessage } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 
 const suggestions = [
   "How can I save money faster?",
@@ -11,6 +12,7 @@ const suggestions = [
 ];
 
 export default function Chatbot() {
+  const { user } = useAuth();
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -45,8 +47,8 @@ export default function Chatbot() {
           content: m.text,
         }));
 
-      // Get real response from Backend
-      const aiText = await sendChatMessage(userMsg, chatHistory);
+      // Get real response from Backend with user context (uid)
+      const aiText = await sendChatMessage(userMsg, chatHistory, user?.uid);
 
       setMessages((prev) => [
         ...prev,
