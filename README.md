@@ -1,106 +1,91 @@
-# 💰 PennyWise — Smart Savings & Micro-Investment Assistant
+# 💰 PennyWise — AI-Powered Fintech & behavioral Savings Platform
 
-PennyWise is a production-ready, full-stack fintech platform designed to automate savings. It uses a premium, high-performance interface to help users visualize their financial goals and save money automatically through intelligent transaction round-ups and AI-driven insights.
+PennyWise is a high-end, full-stack fintech ecosystem designed to revolutionize how users save and manage money. It combines **AI-driven behavioral coaching**, **automated micro-investing**, and **gamified "Money Missions"** to transform financial discipline from a chore into an engaging experience.
 
----
-
-## 🏗️ Technical Architecture
-
-This project is built using a modern **Client-Server** architecture to ensure security, high performance, and scalability.
-
-- **Frontend (Client)**: A high-performance React 19 application built with Vite and Tailwind CSS v4. It focuses on premium UX, real-time data visualization, and interactive goal management.
-- **Backend (Server)**: A Node.js/Express proxy server. It secures sensitive operations, manages AI API communication (Groq), and acts as a gateway for future third-party integrations (UPI/Banking).
+Built with a premium "Bento Grid" aesthetic, PennyWise offers a seamless interface for tracking goals, identifying spending leaks, and optimizing net worth through interactive, data-driven insights.
 
 ---
 
-## ✨ Features Implemented (Current State)
+## 🏗️ Core Architecture & Tech Stack
 
-### 📊 1. Premium Financial Dashboard
-- **Modern Fintech UI**: Inspired by CRED and Google Pay, featuring Glassmorphism, subtle gradients, and dark-mode optimization.
-- **AI Insight Panel**: Live dashboard section analyzing spending habits and providing actionable financial advice.
-- **Quick Actions**: One-tap access to pay contacts, send money, or scan QR. Supports manual recipient entry (Name/UPI).
-- **Micro-animations**: Smooth transitions and progress animations for an engaging experience.
+PennyWise utilizes a robust **Client-Server-Middleware** architecture designed for scalability and secure AI orchestration.
 
-### 🎯 2. "Dream Tracker" Goal Management
-- **Smart Goal Cards**: Displays product name, target price, current progress, and remaining days to achieve the goal.
-- **Product Integration**: Paste Amazon/Flipkart links to track specific items; includes automatic URL normalization and "Buy Now" redirection.
-- **Advanced Metrics**: Real-time calculation of "Remaining Amount" and the required "Daily Saving Rate" to reach goals within 60 days.
-
-### 📈 3. Data Visualization & Projections
-- **Savings Projection Graph**: Integrated **Recharts** to visualize future savings trajectories based on real-world historical data.
-- **Dynamic Analysis**: Automatically calculates your average daily saving rate from transaction history to predict achievement dates.
-- **Interactive Tooltips**: Detailed hover-states showing projected savings for any future day.
-
-### 🤖 4. AI Student Financial Coach
-- **Engine**: Powered by **Groq AI (Llama 3.3)** for context-aware financial guidance.
-- **Spending Pattern Analyzer**: Analyzes transactions by category (Food, Shopping, etc.) and generates insights if specific categories exceed healthy limits (e.g., >30% spending).
-- **Goal Motivation**: Intelligent system providing motivational nudges like "Only ₹350 more to unlock your goal!"
-
-### 🔄 5. Interactive Savings Allocation
-- **Manual Goal Selection**: Users now choose exactly which goal to fund after a successful round-up, giving full control over savings.
-- **Transaction Linking**: Firestore tracks which transaction funded which goal for a complete audit trail.
-
-### 🔒 6. Security & Authentication
-- **Firebase Auth**: Fully implemented Email/Password registration and login.
-- **Private Env Management**: Decoupled `.env` files for frontend (Firebase keys) and backend (AI keys).
-- **Git Protection**: Robust `.gitignore` preventing sensitive keys or `node_modules` from being pushed to public repositories.
+| Layer | Technologies | Role |
+| :--- | :--- | :--- |
+| **Frontend** | React 19, Vite, Tailwind CSS v4, Framer Motion | High-performance, glass-morphic UI with micro-interactions. |
+| **Backend** | Node.js, Express, Axios | API orchestration, AI context management, and secure proxying. |
+| **Logic/AI** | Groq Llama 3.3 (70B), Custom Analysis Services | Real-time spending analysis and personalized coaching advice. |
+| **Database** | Firebase Firestore (NoSQL) | Real-time synchronization of transactions, goals, and user states. |
+| **Security** | Firebase Auth, Environment Decoupling | Secure user sessions and protected API keys. |
 
 ---
 
-## 🛠️ Technology Stack
+## ✨ Key Features & Innovation
 
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend** | React 19, Vite, Tailwind CSS v4, Recharts, Lucide React, Framer Motion |
-| **Backend** | Node.js, Express, Axios, Dotenv, Groq SDK |
-| **Database** | Firebase Firestore (NoSQL) |
-| **Auth** | Firebase Authentication |
-| **AI** | Groq API (Llama-3.3-70b-versatile) |
+### 📊 1. Bento Grid "Collage" Dashboard
+*   **High-End Aesthetic**: Move beyond traditional lists with a modern bento-style layout featured in premium apps like Apple and CRED.
+*   **Live Net Worth Tracking**: A real-time "Super Card" that visualizes bank balance, automated savings, and day streaks.
+*   **Action Hub**: One-tap access to core operations (Recharge, Bills, Send Money).
+
+### 🤖 2. AI Financial Coach (Real-Time Brain)
+*   **Behavioral Analysis**: Automatically categorizes transactions (Food, Shopping, Services) and identifies high-risk spending patterns.
+*   **Financial Health Score**: A proprietary 0-100 score calculated based on savings-to-spending ratios and consistency.
+*   **Coach Spotlight**: A conversational messenger-style UI where the AI provides 3 daily actionable insights based on your recent activity.
+
+### 🎮 3. AI Money Missions (Gamification)
+*   **XP-Based Leveling**: Users earn an "Impact Score" by completing behavioral tasks.
+*   **Data-Verified Tasks**: Missions like "Round-up Streak" or "Dining Discipline" are verified by scanning live Firestore transaction data—they only complete when you *actually* save.
+*   **Behavioral Nudges**: Encourages users to skip luxury spending (Zomato/Swiggy) and contribute to long-term goals.
+
+### 🎯 4. "Dream Tracker" & Automated Savings
+*   **URL-to-Goal Integration**: Users can paste Amazon/Flipkart links; the system normalizes the data to track towards the specific purchase.
+*   **Smart Allocation**: Every time you spend, PennyWise calculates a "Round-up". You get a popup to choose exactly which goal this spare change should fund.
+*   **Savings Projection**: Interactive **Recharts** visualizations that predict when you'll achieve your goal based on your current daily saving rate.
+
+### 📸 5. Integrated Payments & QR Scanner
+*   **Real-time Scanning**: Integrated `html5-qrcode` library for a professional, in-browser camera scanner.
+*   **UPI Protocol Parsing**: Automatically extracts Recipient Name and UPI ID from QR codes to streamline the payment flow.
+*   **Manual Entry Mode**: Support for both phone-number based and VPA-based (UPI) manual recipients.
 
 ---
 
-## 📂 Project Structure
+## 📂 System Folder Structure
 
 ```text
 Aetherion-Pennywise/
-├── backend/               # Express Server
-│   ├── services/         # AI Logic & Spending Analyzer
-│   ├── routes/           # Secure API endpoints
+├── backend/               # Node.js Express API
+│   ├── config/           # Firebase Admin & Service configs
+│   ├── services/         # Coaching Logic, Analyzer, AI Service
+│   ├── routes/           # Secure AI & Auth Endpoints
 │   └── index.js          # Entry point
 ├── frontend/              # Vite + React Client
 │   ├── src/
-│   │   ├── components/   # UI: GoalCard, SavingsChart, RoundUpPopup
-│   │   ├── pages/        # Dashboard, Goals, AI Chat
-│   │   ├── utils/        # Projection & Analytics logic
-│   │   └── services/     # Firebase & Backend API calls
+│   │   ├── components/   # UI: QRScanner, AIInsights, PaymentModal
+│   │   ├── pages/        # Dashboard, MoneyMissions, Goals, Chat
+│   │   ├── services/     # Frontend Firestore & API handlers
+│   │   └── utils/        # Savings logic & Date formatting
 └── README.md              # Project Documentation
 ```
 
 ---
 
-## 🚀 Deployment & Local Setup
+## 🚀 Deployment Guide
 
-### **1. Setup Backend**
-```bash
-cd backend
-npm install
-# Create .env with: PORT=5000, GROQ_API_KEY=your_key
-npm run dev
-```
+### **Backend (Node.js)**
+1.  Navigate to `/backend`.
+2.  Install dependencies: `npm install`.
+3.  Set up `.env`: `PORT`, `GROQ_API_KEY`, `FIREBASE_PROJECT_ID`.
+4.  Run: `npm start`.
 
-### **2. Setup Frontend**
-```bash
-cd frontend
-npm install
-# Create .env with: VITE_FIREBASE_* keys and VITE_API_URL=http://localhost:5000/api
-npm run dev
-```
+### **Frontend (Vite)**
+1.  Navigate to `/frontend`.
+2.  Install dependencies: `npm install`.
+3.  Set up `.env`: All `VITE_FIREBASE_*` keys and `VITE_API_URL`.
+4.  Run: `npm run dev` or `npx vite build` for production.
 
 ---
 
-## 📝 Planned Roadmap
-- [x] **Data Visualization**: Recharts integration for savings projections.
-- [x] **Category Analysis**: Spending pattern insights.
-- [x] **Interactive Allocation**: Manual goal selection for savings.
-- [ ] **Investment Simulation**: Real-time tracking of "Digital Gold" price.
-- [ ] **Notification System**: Push alerts for goal milestones.
+## 🛡️ Future Roadmap
+- [ ] **Digital Gold**: Live tracking and micro-investment into real-time gold prices.
+- [ ] **Smart Notifications**: Push alerts when the AI identifies a potential fraudulent or unusually high spending pattern.
+- [ ] **P2P Savings Groups**: Invite friends to save collaboratively for group trips or events.
