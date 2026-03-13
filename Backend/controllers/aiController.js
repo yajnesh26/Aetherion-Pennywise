@@ -1,14 +1,12 @@
 const Groq = require("groq-sdk");
 
-<<<<<<< HEAD
+
 // ── Initialise Gemini client ──────────────────────────────
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-=======
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
->>>>>>> 603ec6d (Update AI assistant)
 
 exports.askAI = async (req, res) => {
   try {
