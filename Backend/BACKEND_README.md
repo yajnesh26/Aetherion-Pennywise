@@ -68,9 +68,15 @@ Copy `.env.example` to `.env` in the `Backend/` folder and adjust values as need
 # .env example (also provided as .env.example)
 PORT=5000
 MONGO_URI=mongodb://127.0.0.1:27017/pennywise   # local Mongo URI used by default if not set
-JWT_SECRET=your_jwt_secret_here
+JWT_SECRET=your_jwt_secret_here          # auto‑defaults to "dev_secret" if missing
 JWT_EXPIRES_IN=7d
 GEMINI_API_KEY=your_google_gemini_api_key
+
+# Optional Google OAuth (enable sign‑in with Google)
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
+FRONTEND_URL=http://localhost:5173   # used for OAuth redirects
 ```
 
 > **Note:** If you forget to set `MONGO_URI`, the server will automatically fall back to the local URI above and log a helpful message. Make sure MongoDB is running on your machine or provide a valid connection string (Atlas, Docker container, etc.).
@@ -101,6 +107,10 @@ All protected routes require the header:
 |--------|----------|-------------|------|
 | `POST` | `/api/auth/register` | Register a new user | ❌ |
 | `POST` | `/api/auth/login` | Login → returns JWT token | ❌ |
+| `GET` | `/api/auth/google` | **(optional)** start Google OAuth flow | ❌ |
+| `GET` | `/api/auth/google/callback` | OAuth redirect handler (issues JWT & redirects client) | ❌ |
+
+*Google routes are only active when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set. When disabled they return a 501 with instructions.*
 
 **Register body:**
 ```json
@@ -203,7 +213,7 @@ The saved amount is **5–10% of the transaction amount**, with a random jitter 
 ```
 
 **How it works:**
-1. ✅ Uses **Google Gemini 2.0 Flash** for intelligent, personalized responses
+1. ✅ Uses **Google Gemini 1.5‑flash** (configured in `aiController.js`) for intelligent, personalized responses
 2. 📚 Powered by system prompt with PennyWise context (features, benefits, philosophy)
 3. 🛡️ **Fallback mode**: If Gemini API is unavailable/invalid, uses offline knowledge base
 4. 💬 Answers questions about:
@@ -303,6 +313,7 @@ If the site blocks scraping (CAPTCHA/403), falls back to extracting the product 
 | `cors` | Cross-origin requests |
 | `dotenv` | Environment variables |
 | `@google/generative-ai` | Google Gemini AI SDK |
+| `passport-google-oauth20` | Google OAuth integration (optional) |
 | `axios` | HTTP client (product scraping) |
 | `cheerio` | HTML parsing (product scraping) |
 | `nodemon` | Dev hot-reload |

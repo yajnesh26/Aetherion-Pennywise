@@ -12,12 +12,13 @@ Every time you make a payment, PennyWise automatically rounds up the amount and 
 
 | Feature | Description |
 |---------|-------------|
-| 🔄 **Smart Round-Up Savings** | Dynamic 5–10% spare-change savings on every payment — varies naturally each time |
+| 🔄 **Smart Round-Up Savings** | Dynamic 5–10% spare‑change savings on every payment — varies naturally each time |
 | 🎯 **Goal-Based Saving** | Create savings goals manually or by pasting Amazon/Flipkart product links |
-| 🛒 **Product Link Import** | Paste a product URL → auto-extracts name, price & image → creates a goal |
-| 🤖 **AI Financial Assistant** | Gemini 2.0 Flash powered chatbot with offline fallback for financial tips |
-| 💸 **UPI-Style Payments** | Simulated payment dashboard with contacts, payment actions & transaction history |
-| 📊 **Savings Analytics** | Visual progress bars, prediction graphs & priority-based goal tracking |
+| 🛒 **Product Link Import** | Paste a product URL → auto‑extracts name, price & image → creates a goal |
+| 🔐 **Google OAuth Login** | Optional “Continue with Google” sign‑in for fast account creation/setup |
+| 🤖 **AI Financial Assistant** | Gemini **1.5‑flash** powered chatbot with offline fallback for financial tips |
+| 💸 **UPI‑Style Payments** | Simulated payment dashboard with contacts, payment actions & transaction history |
+| 📊 **Savings Analytics** | Visual progress bars, prediction graphs & priority‑based goal tracking |
 
 ---
 
@@ -55,6 +56,8 @@ cd Aetherion-Pennywise
 cd Backend
 npm install
 # Copy .env.example to .env and edit values (see Backend/README.md for details)
+# (optional) add GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_CALLBACK_URL
+# and FRONTEND_URL if you want Google OAuth login
 npm start
 ```
 
@@ -80,15 +83,15 @@ App opens on **http://localhost:5173**
 |-------|------------|
 | **Frontend** | React 19, Vite 8, Tailwind CSS v4, React Router v7, Recharts, Lucide Icons |
 | **Backend** | Node.js, Express 4, MongoDB, Mongoose 8, JWT Authentication |
-| **AI** | Google Gemini 2.0 Flash + Offline Fallback |
+| **AI** | Google Gemini 1.5 Flash (see backend for model config) + Offline Fallback |
 | **Scraping** | Cheerio + Axios (Amazon/Flipkart product extraction) |
 
 ---
 
 ## 📖 Documentation
 
-- [**Backend README**](./Backend/README.md) — API endpoints, environment setup, architecture
-- [**Frontend README**](./frontend/README.md) — Components, pages, build instructions
+- [**Backend README**](./Backend/README.md) — API endpoints, environment setup (including optional Google OAuth), architecture
+- [**Frontend README**](./frontend/README.md) — Components, pages, build instructions (login, profile setup, OAuth flow)
 
 ---
 
