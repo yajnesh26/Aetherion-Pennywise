@@ -55,6 +55,7 @@ npm run build     # Production build
 npm run preview   # Preview production build
 npm run lint      # ESLint check
 ```
+> **Note:** the login page can handle a `token` query parameter (used by Google OAuth). When your backend is configured with Google credentials, the "Continue with Google" button on the login screen redirects to `/api/auth/google` and you will come back with `?token=...` which is auto‑stored in localStorage.
 
 ---
 
@@ -93,7 +94,8 @@ The JWT token is stored in `localStorage` as `token` and automatically attached 
 ### `/login` — Login
 - Email + password form → calls `loginUser()`
 - Stores JWT `token` and `pennywise_user` in localStorage
- - Redirects to `/dashboard` or `/setup-profile` if profile incomplete
+- Redirects to `/dashboard` or `/setup-profile` if profile incomplete
+- Supports **Google OAuth**: a button redirects to the backend OAuth endpoint; upon return the token query param is saved automatically.
 
 ### `/register` — Register
 - Name + email + password form → calls `registerUser()`
@@ -119,9 +121,11 @@ The JWT token is stored in `localStorage` as `token` and automatically attached 
 - Financial advisor persona focused on savings, budgets & investments
 
 ### `/setup-profile` — Setup profile
-- New onboarding page shown to users who haven't completed profile details.
+- New onboarding page shown to users who haven't completed profile details (triggered after login or Google OAuth).
 - Fields: Phone Number, Account Number, IFSC Code, UPI ID
 - Calls `updateProfile()` and redirects to `/dashboard` on success
+
+> This page prevents the user from accessing the dashboard until they provide at least a phone number and account details; the check happens both in the login flow and in `Dashboard.jsx`.
 
 ---
 
