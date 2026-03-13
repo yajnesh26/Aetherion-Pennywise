@@ -1,17 +1,20 @@
 const Groq = require("groq-sdk");
-
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // ── Initialise Gemini client ──────────────────────────────
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+// ── Initialise Groq client ──────────────────────────────
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
 exports.askAI = async (req, res) => {
-  try {
-    const { question } = req.body;
+  const { question } = req.body;
 
+  try {
+    // Try Groq first
     const completion = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages: [
@@ -29,7 +32,7 @@ exports.askAI = async (req, res) => {
 
     const answer = completion.choices[0].message.content;
 
-    res.json({
+    return res.json({
       success: true,
       answer,
     });
@@ -37,24 +40,24 @@ exports.askAI = async (req, res) => {
   } catch (error) {
     console.error("Groq error:", error);
 
-    res.json({ success: true, answer });
+    try {
+      // Fallback to Gemini if Groq fails
+      const result = await model.generateContent(question);
+      const response = await result.response;
+      const answer = response.text();
+
+      return res.json({
+        success: true,
+        answer,
+      });
+
     } catch (err) {
-    // Log full error for debugging (don't leak to users in production)
-    console.error("AI error:", err);
+      console.error("Gemini error:", err);
 
-    // Gemini failed (quota / network) — return fallback instead of error
-    const fallback = getFallbackResponse(req.body.question || "");
-
-    const responsePayload = {
-      success: true,
-      answer: fallback + "\n\n_⚡ Powered by offline mode_",
-    };
-
-    // If we're in development, include a short dev hint to help debugging invalid key/quota
-    if (process.env.NODE_ENV !== "production") {
-      responsePayload.devHint = `AI service error: ${err.message || String(err)}. Check GEMINI_API_KEY and quota.`;
+      return res.status(500).json({
+        success: false,
+        answer: "AI service is temporarily unavailable. Please try again later.",
+      });
     }
-
-    return res.json(responsePayload);
   }
 };
