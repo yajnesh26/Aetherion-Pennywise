@@ -8,6 +8,8 @@ import RoundUpPopup from "../components/RoundUpPopup";
 import PriorityGoalCard from "../components/PriorityGoalCard";
 import TransactionList from "../components/TransactionList";
 import { getGoals, makePayment } from "../services/api";
+import QRScanner from "../components/QRScanner";
+import { parseUPIQR } from "../utils/parseUpiQR";
 
 // ── Static contacts (could be fetched from backend later) ──
 const dummyContacts = [
@@ -34,6 +36,7 @@ export default function Dashboard() {
   const [paymentModal, setPaymentModal] = useState(null);
   const [roundUpPopup, setRoundUpPopup] = useState(null);
   const [roundUpInfo, setRoundUpInfo] = useState(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   // Greeting
   const hour = new Date().getHours();
@@ -89,6 +92,13 @@ export default function Dashboard() {
   const handleContactPay = (contact) => setPaymentModal(contact);
 
   const handleActionClick = (actionLabel) => {
+
+    // OPEN QR SCANNER
+    if (actionLabel === "Scan QR") {
+      setScannerOpen(true);
+      return;
+    }
+
     if (actionLabel === "Pay Contacts" || actionLabel === "Send Money") {
       setPaymentModal({ name: "Enter Details", upi: "" });
     } else {
@@ -97,6 +107,22 @@ export default function Dashboard() {
         upi: `${actionLabel.toLowerCase().replace(" ", "")}@upi`,
       });
     }
+  };
+
+  const handleQRScan = (data) => {
+    setScannerOpen(false);
+
+    const parsed = parseUPIQR(data);
+
+    if (!parsed) {
+      alert("Invalid UPI QR");
+      return;
+    }
+
+    setPaymentModal({
+      name: parsed.name,
+      upi: parsed.upi,
+    });
   };
 
   const handlePaymentComplete = async (paymentData) => {
@@ -237,6 +263,12 @@ export default function Dashboard() {
           roundUpInfo={roundUpInfo}
           onSave={handleRoundUpSave}
           onSkip={handleRoundUpSkip}
+        />
+      )}
+      {scannerOpen && (
+        <QRScanner
+          onScan={handleQRScan}
+          onClose={() => setScannerOpen(false)}
         />
       )}
     </div>
