@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { askAI } = require("../controllers/aiController");
-
+const { protect } = require("../middleware/authMiddleware");
 
 // POST /api/ai/ask — ask the AI assistant
 // All AI routes require authentication
