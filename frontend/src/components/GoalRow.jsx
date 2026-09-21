@@ -149,11 +149,7 @@ export default function GoalRow({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (goal.url) {
-                  window.open(goal.url, "_blank", "noopener,noreferrer");
-                } else {
-                  onBuy?.(goal);
-                }
+                onBuy?.(goal);
               }}
               className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm shadow-emerald-500/20"
             >

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import GoalsTable from "../components/GoalsTable";
 import PredictionGraph from "../components/PredictionGraph";
 import AddGoalFromLink from "../components/AddGoalFromLink";
-import { getGoals, createGoal, deleteGoal } from "../services/api";
+import { getGoals, createGoal, deleteGoal, buyGoal } from "../services/api";
 
 // Average daily saving — could be computed from transaction history later
 const AVG_DAILY_SAVING = 75;
@@ -162,12 +162,34 @@ export default function Goals() {
 
   const handleSelect = (goal) => setSelectedGoal(goal);
 
-  // ── Buy — redirect to product URL or show alert ──────────
-  const handleBuy = (goal) => {
-    if (goal.url) {
-      window.open(goal.url, "_blank", "noopener,noreferrer");
-    } else {
-      alert(`🎉 Purchasing "${goal.name}" for ₹${goal.target.toLocaleString("en-IN")}!`);
+  // ── Buy — deduct wallet via API, then open product URL if available ──
+  const handleBuy = async (goal) => {
+    try {
+      const res = await buyGoal(goal.id);
+      const { savingsWallet, message } = res.data;
+
+      setTotalSavings(savingsWallet);
+
+      // Backend deletes the goal after a successful purchase
+      const remaining = goals.filter((g) => g.id !== goal.id);
+      setGoals(remaining);
+      if (selectedGoal?.id === goal.id) {
+        setSelectedGoal(remaining.length > 0 ? remaining[0] : null);
+      }
+
+      if (goal.url) {
+        window.open(goal.url, "_blank", "noopener,noreferrer");
+      } else {
+        alert(message || `🎉 Purchased "${goal.name}" for ₹${goal.target.toLocaleString("en-IN")}!`);
+      }
+    } catch (err) {
+      console.error("Buy goal failed:", err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+      setError(err.response?.data?.message || "Failed to purchase goal. Please try again.");
     }
   };
 

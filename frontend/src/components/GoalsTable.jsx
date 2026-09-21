@@ -185,11 +185,7 @@ export default function GoalsTable({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (goal.url) {
-                        window.open(goal.url, "_blank", "noopener,noreferrer");
-                      } else {
-                        onBuy?.(goal);
-                      }
+                      onBuy?.(goal);
                     }}
                     className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-semibold rounded-md transition-colors"
                   >
