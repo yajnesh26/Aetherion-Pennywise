@@ -22,9 +22,20 @@ export default function Register() {
       await registerUser(form);
       navigate("/login");
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Registration failed. Please try again."
-      );
+      const apiMessage = err.response?.data?.message;
+
+      if (apiMessage) {
+        // Backend responded with a meaningful error (validation, duplicate email, server error)
+        setError(apiMessage);
+      } else if (err.request) {
+        // Request was sent but no response received — backend unreachable
+        setError(
+          "Unable to reach the server. Please make sure the backend is running and try again."
+        );
+      } else {
+        // Error before the request could be sent
+        setError("Registration failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
