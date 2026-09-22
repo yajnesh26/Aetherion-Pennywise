@@ -51,8 +51,8 @@ export default function SetupProfile() {
           {error && <div className="mb-4 text-sm text-red-400">{error}</div>}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <input name="phoneNumber" value={form.phoneNumber} onChange={handleChange} placeholder="Phone number (10 digits)" className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
-            <input name="accountNumber" value={form.accountNumber} onChange={handleChange} placeholder="Account number" className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
+            <input name="phoneNumber" value={form.phoneNumber} onChange={handleChange} placeholder="Phone number (10 digits)" required className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
+            <input name="accountNumber" value={form.accountNumber} onChange={handleChange} placeholder="Account number" required className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
             <input name="ifscCode" value={form.ifscCode} onChange={handleChange} placeholder="IFSC code" className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
             <input name="upiId" value={form.upiId} onChange={handleChange} placeholder="UPI ID (e.g. user@upi)" className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
 
