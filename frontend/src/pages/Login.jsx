@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Wallet, Mail, Lock, ArrowRight } from "lucide-react";
 import { loginUser } from "../services/api";
@@ -8,23 +8,6 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  // If redirected back from Google OAuth with token in query, store it and redirect
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const tokenFromQuery = params.get("token");
-      if (tokenFromQuery) {
-        // store token and remove token param from URL
-        localStorage.setItem("token", tokenFromQuery);
-        // Optionally fetch user info later; for now redirect to dashboard
-        window.history.replaceState({}, document.title, window.location.pathname);
-        navigate("/dashboard");
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, [navigate]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
