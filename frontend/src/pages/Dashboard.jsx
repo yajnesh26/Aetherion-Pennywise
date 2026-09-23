@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Sparkles, Loader2 } from "lucide-react";
+import { ChevronRight, Sparkles, Loader2, AlertCircle, X } from "lucide-react";
 import PaymentActions from "../components/PaymentActions";
 import ContactCard from "../components/ContactCard";
 import PaymentModal from "../components/PaymentModal";
@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [roundUpPopup, setRoundUpPopup] = useState(null);
   const [roundUpInfo, setRoundUpInfo] = useState(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanError, setScanError] = useState("");
 
   // Greeting
   const hour = new Date().getHours();
@@ -95,6 +96,7 @@ export default function Dashboard() {
 
     // OPEN QR SCANNER
     if (actionLabel === "Scan QR") {
+      setScanError("");
       setScannerOpen(true);
       return;
     }
@@ -111,11 +113,12 @@ export default function Dashboard() {
 
   const handleQRScan = (data) => {
     setScannerOpen(false);
+    setScanError("");
 
     const parsed = parseUPIQR(data);
 
     if (!parsed) {
-      alert("Invalid UPI QR");
+      setScanError("This doesn't appear to be a UPI QR code. Please scan a genuine UPI payment QR and try again.");
       return;
     }
 
@@ -182,6 +185,20 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 space-y-6">
+      {/* ─── QR Scan Error Banner ───────────────────────── */}
+      {scanError && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+          <p className="text-sm text-red-300 flex-1">{scanError}</p>
+          <button
+            onClick={() => setScanError("")}
+            className="text-red-400 hover:text-red-300 shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* ─── Header ─────────────────────────────────────── */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-white">
