@@ -27,6 +27,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
   const [manualPrice, setManualPrice] = useState("");
   const [nickname, setNickname] = useState("");
   const [imgError, setImgError] = useState(false);
+  const [adding, setAdding] = useState(false); // "Add to Goals" in flight
 
   const handleFetch = async () => {
     if (!url.trim()) return;
@@ -69,27 +70,35 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
     }
   };
 
-  const handleAddGoal = () => {
-    if (!product) return;
+  const handleAddGoal = async () => {
+    // Ignore clicks while an add operation is already in flight
+    if (!product || adding) return;
     const price = manualPrice ? Number(manualPrice) : product.price;
     if (!price || price <= 0) {
       setError("Please enter a valid price to continue.");
       return;
     }
 
-    onAddGoal({
-      name: nickname || product.name,
-      target: price,
-      image: imgError ? null : product.image,
-      url: product.url,
-    });
-
-    // Reset
-    setUrl("");
-    setProduct(null);
-    setManualPrice("");
-    setNickname("");
+    setAdding(true);
     setError("");
+
+    try {
+      await onAddGoal({
+        name: nickname || product.name,
+        target: price,
+        image: imgError ? null : product.image,
+        url: product.url,
+      });
+
+      // Reset (same as before)
+      setUrl("");
+      setProduct(null);
+      setManualPrice("");
+      setNickname("");
+    } finally {
+      // Always release the pending state so the user can retry on failure
+      setAdding(false);
+    }
   };
 
   return (
@@ -278,10 +287,15 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
               {/* Add button */}
               <button
                 onClick={handleAddGoal}
-                className="mt-4 inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all text-sm"
+                disabled={adding}
+                className="mt-4 inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all text-sm disabled:opacity-50 disabled:pointer-events-none"
               >
-                <Plus className="w-4 h-4" />
-                Add to Goals
+                {adding ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
+                {adding ? "Adding…" : "Add to Goals"}
               </button>
             </div>
           </div>
