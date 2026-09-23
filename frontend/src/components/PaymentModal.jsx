@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, IndianRupee, ArrowRight } from "lucide-react";
+import { X, IndianRupee, ArrowRight, AlertCircle } from "lucide-react";
 
 const avatarColors = [
   "from-emerald-500 to-teal-400",
@@ -13,6 +13,7 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
   const [note, setNote] = useState("");
   const [phoneNumber, setPhoneNumber] = useState(contact?.phone || "");
   const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState(null);
 
   const handlePay = async () => {
     const numAmount = parseFloat(amount);
@@ -26,12 +27,33 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
       return;
     }
 
+    setError(null);
     setProcessing(true);
-    // Simulate payment processing
-    await new Promise((r) => setTimeout(r, 1200));
-    setProcessing(false);
 
-    onPayment?.({ phoneNumber: cleaned, contact, amount: numAmount, description: note });
+    try {
+      // Wait for the actual payment request before re-enabling the form
+      const result = await onPayment?.({
+        phoneNumber: cleaned,
+        contact,
+        amount: numAmount,
+        description: note,
+      });
+
+      // On failure the modal stays open so the user can review/retry their details
+      if (result && !result.success) {
+        setError(result.error || "Payment failed. Please try again.");
+      }
+    } catch (e) {
+      console.error("Payment request error:", e);
+      setError("Payment failed. Please try again.");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (processing) return;
+    onClose?.();
   };
 
   const quickAmounts = [100, 200, 500, 1000, 2000, 5000];
@@ -47,15 +69,16 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* Modal */}
       <div className="relative w-full max-w-md bg-slate-900 border border-slate-700/60 rounded-t-3xl sm:rounded-3xl p-6 animate-slideUp shadow-2xl">
         {/* Close button */}
         <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+          onClick={handleClose}
+          disabled={processing}
+          className="absolute top-4 right-4 p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors disabled:opacity-40"
         >
           <X className="w-5 h-5" />
         </button>
@@ -116,6 +139,14 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
           placeholder="Add a note (optional)"
           className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700/40 rounded-xl text-white text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/30 transition-all mb-5"
         />
+
+        {/* Error */}
+        {error && (
+          <div className="flex items-center gap-2 p-3 mb-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <p className="text-xs text-red-400">{error}</p>
+          </div>
+        )}
 
         {/* Pay button */}
         <button

@@ -126,10 +126,7 @@ export default function Dashboard() {
   };
 
   const handlePaymentComplete = async (paymentData) => {
-    setPaymentModal(null);
-
     try {
-
       const res = await makePayment({
         phoneNumber: paymentData.phoneNumber,
         amount: paymentData.amount,
@@ -152,8 +149,22 @@ export default function Dashboard() {
 
       // Trigger transaction list refresh
       setTxRefreshKey((k) => k + 1);
+
+      // Payment succeeded — only now close the modal
+      setPaymentModal(null);
+
+      return { success: true };
     } catch (err) {
       console.error("Payment failed:", err);
+
+      // Keep the modal open and surface a user-facing message (no raw errors)
+      const error =
+        err.response?.data?.message ||
+        (err.response
+          ? "Payment could not be completed. Please try again."
+          : "Network error. Please check your connection and try again.");
+
+      return { success: false, error };
     }
   };
 
