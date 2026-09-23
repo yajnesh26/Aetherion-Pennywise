@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import ChatMessage from "../components/ChatMessage";
 import { askAI } from "../services/api";
 
@@ -11,6 +12,7 @@ const suggestions = [
 ];
 
 export default function Chatbot() {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -22,11 +24,22 @@ export default function Chatbot() {
   const [typing, setTyping] = useState(false);
   const chatEndRef = useRef(null);
 
+  // ── Auth guard: logged-out users are sent to login ─────────
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+    }
+  }, [navigate]);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
   const sendMessage = async (text) => {
+    // Prevent concurrent requests while an AI response is being processed
+    if (typing) return;
+
     const userMsg = text || input.trim();
     if (!userMsg) return;
 
@@ -61,7 +74,14 @@ export default function Chatbot() {
       }
     } catch (err) {
       console.error("AI request error:", err);
-      
+
+      // Treat 401 as an authentication/session problem, not a network failure
+      if (err.response?.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+
       // Provide a helpful fallback message
       const fallbackMsg =
         "🤖 I'm having trouble connecting right now, but here's a tip: PennyWise automatically saves 5–10% of every transaction as spare change. It's like painless saving! Try asking me about round-up savings or how to create a goal.";
@@ -96,10 +116,6 @@ export default function Chatbot() {
           <p className="text-xs text-slate-500">
             Powered by PennyWise Intelligence
           </p>
-        </div>
-        <div className="ml-auto flex items-center gap-1.5">
-          <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-          <span className="text-xs text-slate-500">Online</span>
         </div>
       </div>
 
@@ -137,7 +153,8 @@ export default function Chatbot() {
               <button
                 key={s}
                 onClick={() => sendMessage(s)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-accent bg-indigo-500/10 rounded-full hover:bg-indigo-500/20 border border-indigo-500/20 transition-colors"
+                disabled={typing}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-accent bg-indigo-500/10 rounded-full hover:bg-indigo-500/20 border border-indigo-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Sparkles className="w-3 h-3" />
                 {s}
