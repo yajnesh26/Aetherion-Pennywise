@@ -157,6 +157,12 @@ export default function Goals() {
       }
     } catch (err) {
       console.error("Delete goal failed:", err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+      setError(err.response?.data?.message || "Failed to delete goal. Please try again.");
     }
   };
 
