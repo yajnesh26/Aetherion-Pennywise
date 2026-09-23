@@ -11,6 +11,18 @@ export default function RoundUpPopup({ payment, roundUpInfo, onSave, onSkip }) {
   const roundedUp = original + spare;
   const walletBalance = roundUpInfo?.walletBalance || 0;
 
+  // Derive a truthful recipient label. Free-form "Send Money"/"Pay Contacts"
+  // payments have no real recipient name (contact.name is the placeholder
+  // "Enter Details"), so fall back to the entered phone number (or UPI id)
+  // the user actually provided instead of showing the placeholder.
+  const recipientLabel = (() => {
+    const name = payment?.contact?.name;
+    if (name && name !== "Enter Details") return name;
+    if (payment?.phoneNumber) return payment.phoneNumber;
+    if (payment?.upi) return payment.upi;
+    return payment?.contact?.name || "merchant";
+  })();
+
   const hasSavings = spare > 0;
 
   const handleSave = () => {
@@ -47,7 +59,7 @@ export default function RoundUpPopup({ payment, roundUpInfo, onSave, onSkip }) {
           <h3 className="text-lg font-bold text-white mb-1">Payment Successful!</h3>
           <p className="text-slate-400 text-sm">
             ₹{original.toLocaleString()} paid to{" "}
-            <span className="text-slate-200">{payment?.contact?.name || "merchant"}</span>
+            <span className="text-slate-200">{recipientLabel}</span>
           </p>
         </div>
 
