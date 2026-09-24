@@ -59,17 +59,17 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-F8
+S2
 
 ## Next issue
 
-S2
+S3
 
 ## Current state
 
-- F8 has been fixed, committed, and pushed by the user.
-- S2 is the next issue.
-- Do NOT start S2 until the user explicitly tells you to continue.
+- S2 has been fixed, committed, and pushed by the user.
+- S3 is the next issue (audit note / by-design tradeoff — review scope before changing).
+- Do NOT start S3 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -283,39 +283,47 @@ USER CONFIRMED F8 IS COMMITTED AND PUSHED.
 
 ---
 
+## S2 — "Continue with Google" hard-codes localhost:5000
+
+STATUS: FIXED + COMMITTED + PUSHED
+
+Files changed:
+- frontend/src/services/api.js
+- frontend/src/pages/Login.jsx
+
+Fix:
+- Extracted the API origin into an exported `API_BASE_URL` constant in `api.js`
+  (`import.meta.env.VITE_API_URL || "http://localhost:5000/api"`), which the axios
+  instance now uses as its `baseURL`.
+- Login.jsx now redirects to `` `${API_BASE_URL}/auth/google` `` instead of a
+  hard-coded `http://localhost:5000/api/auth/google`.
+- The OAuth URL now respects the same API origin configuration as all API calls.
+
+Verification:
+- `npx eslint src/pages/Login.jsx src/services/api.js` passed.
+- `npm run build` passed.
+- No hard-coded OAuth URL remains; `localhost:5000` only exists as the fallback default in `api.js`.
+
+USER CONFIRMED S2 IS COMMITTED AND PUSHED.
+
+---
+
 # NEXT ISSUE
 
-## S2 — "Continue with Google" hard-codes localhost:5000
+## S3 — JWT stored in localStorage
 
 STATUS: NEXT
 
-Severity:
-Medium
-
-File:
-- frontend/src/pages/Login.jsx
-
 Original audit finding:
 
-"Continue with Google" hard-codes:
-
-`http://localhost:5000`
-
-Current behavior:
-- The "Continue with Google" button routes through a hard-coded URL:
-  `http://localhost:5000/api/auth/google`
-- This only works in a local development environment.
-
-Expected behavior:
-- The OAuth URL should respect the API origin configuration instead of a hard-coded localhost value.
-- `frontend/src/services/api.js` already uses `import.meta.env.VITE_API_URL || "http://localhost:5000/api"` as the base URL — prefer deriving the OAuth URL from the same configuration.
+JWT stored in localStorage.
 
 IMPORTANT:
-Before changing anything:
+This item is recorded as an audit note / by-design tradeoff.
 
-1. Inspect where the OAuth link is built in Login.jsx.
-2. Inspect `frontend/src/services/api.js` for the API base URL configuration.
-3. Determine whether a frontend-only fix is possible (e.g., reusing the configured API origin).
+1. Review the original scope and user instruction before changing anything.
+2. S3 may already be intended behavior and may not require a code change.
+3. Do NOT automatically change this item without that review.
 
 Do NOT:
 - modify backend files
@@ -324,7 +332,7 @@ Do NOT:
 - fix another audit issue
 - refactor unrelated code
 
-Fix ONLY S2.
+Fix ONLY S3 (in accordance with the scope/user-instruction review).
 
 ---
 
@@ -353,7 +361,7 @@ STATUS: COMPLETED (see COMPLETED ISSUES above)
 
 `http://localhost:5000`
 
-STATUS: NEXT
+STATUS: COMPLETED (see COMPLETED ISSUES above)
 
 ---
 
@@ -361,8 +369,7 @@ STATUS: NEXT
 
 JWT stored in localStorage.
 
-STATUS:
-Audit note / by-design tradeoff.
+STATUS: NEXT (audit note / by-design tradeoff)
 
 Do not automatically change this without reviewing the original scope and user instruction.
 
