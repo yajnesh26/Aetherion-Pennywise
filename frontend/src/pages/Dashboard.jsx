@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [roundUpInfo, setRoundUpInfo] = useState(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanError, setScanError] = useState("");
+  const [allContactsOpen, setAllContactsOpen] = useState(false);
 
   // Greeting
   const hour = new Date().getHours();
@@ -91,6 +92,11 @@ export default function Dashboard() {
 
   // ── Payment flow handlers ────────────────────────────────
   const handleContactPay = (contact) => setPaymentModal(contact);
+
+  const handleAllContactsPay = (contact) => {
+    setAllContactsOpen(false);
+    handleContactPay(contact);
+  };
 
   const handleActionClick = (actionLabel) => {
 
@@ -247,7 +253,10 @@ export default function Dashboard() {
           <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
             Recent People
           </h2>
-          <button className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors">
+          <button
+            onClick={() => setAllContactsOpen(true)}
+            className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
+          >
             View all <ChevronRight className="w-3 h-3" />
           </button>
         </div>
@@ -298,6 +307,37 @@ export default function Dashboard() {
           onScan={handleQRScan}
           onClose={() => setScannerOpen(false)}
         />
+      )}
+
+      {allContactsOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center animate-fadeIn">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setAllContactsOpen(false)}
+          />
+          <div className="relative w-full max-w-md bg-slate-900 border border-slate-700/60 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl max-h-[80vh] overflow-y-auto">
+            <button
+              onClick={() => setAllContactsOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-white font-semibold">All Contacts</h3>
+            <p className="text-slate-400 text-sm mb-6">
+              {dummyContacts.length} contacts
+            </p>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {dummyContacts.map((contact, i) => (
+                <ContactCard
+                  key={contact.id}
+                  contact={contact}
+                  index={i}
+                  onPay={handleAllContactsPay}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
