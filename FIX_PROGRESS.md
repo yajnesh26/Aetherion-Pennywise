@@ -46,23 +46,30 @@ OpenCode MUST read this file BEFORE doing any work.
    - After completing the current issue and verification, STOP.
    - Provide a report and wait for the user's confirmation.
 
+9. UPDATE THIS FILE AFTER EACH ISSUE
+   - After the user confirms an issue is fixed/committed, update `FIX_PROGRESS.md`:
+     - move the completed issue into COMPLETED ISSUES
+     - mark the next audit issue as NEXT
+     - update CURRENT STATUS
+   - This keeps the workflow continuable across sessions.
+
 ---
 
 # CURRENT STATUS
 
 ## Last committed issue
 
-F7
+F8
 
 ## Next issue
 
-F8
+S2
 
 ## Current state
 
-- F7 has been fixed and committed by the user.
-- F8 is the next issue.
-- Do NOT start F8 until the user explicitly tells you to continue.
+- F8 has been fixed, committed, and pushed by the user.
+- S2 is the next issue.
+- Do NOT start S2 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -253,9 +260,32 @@ USER CONFIRMED F7 IS COMMITTED.
 
 ---
 
+## F8 — Dashboard "View all" contacts button does nothing
+
+STATUS: FIXED + COMMITTED + PUSHED
+
+File changed:
+- frontend/src/pages/Dashboard.jsx
+
+Fix:
+- The "View all" button in the Recent People section now opens an "All Contacts" modal listing every contact.
+- Reused the existing ContactCard component to render contacts.
+- Reused the existing PaymentModal flow (`handleContactPay`) — clicking a contact in the modal opens the pay flow.
+- No new routes, pages, or components were added.
+- No backend changes — the existing static `dummyContacts` data was reused.
+
+Verification:
+- `npx eslint src/pages/Dashboard.jsx` passed.
+- `npm run build` passed.
+- Pre-existing lint errors remain in untouched files (ContactCard.jsx, PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — intentionally NOT fixed as part of F8.
+
+USER CONFIRMED F8 IS COMMITTED AND PUSHED.
+
+---
+
 # NEXT ISSUE
 
-## F8 — Dashboard "View all" contacts button does nothing
+## S2 — "Continue with Google" hard-codes localhost:5000
 
 STATUS: NEXT
 
@@ -263,26 +293,29 @@ Severity:
 Medium
 
 File:
-- frontend/src/pages/Dashboard.jsx
+- frontend/src/pages/Login.jsx
 
 Original audit finding:
 
-The "View all" contacts button has no `onClick` handler.
+"Continue with Google" hard-codes:
+
+`http://localhost:5000`
 
 Current behavior:
-- Clicking "View all" does nothing.
+- The "Continue with Google" button routes through a hard-coded URL:
+  `http://localhost:5000/api/auth/google`
+- This only works in a local development environment.
 
 Expected behavior:
-- The button should perform a meaningful frontend action.
-- Prefer an existing contacts page, route, panel, or component if one already exists.
+- The OAuth URL should respect the API origin configuration instead of a hard-coded localhost value.
+- `frontend/src/services/api.js` already uses `import.meta.env.VITE_API_URL || "http://localhost:5000/api"` as the base URL — prefer deriving the OAuth URL from the same configuration.
 
 IMPORTANT:
 Before changing anything:
 
-1. Inspect Dashboard.jsx.
-2. Inspect existing contact-related components.
-3. Inspect existing routes.
-4. Determine whether a contacts destination already exists.
+1. Inspect where the OAuth link is built in Login.jsx.
+2. Inspect `frontend/src/services/api.js` for the API base URL configuration.
+3. Determine whether a frontend-only fix is possible (e.g., reusing the configured API origin).
 
 Do NOT:
 - modify backend files
@@ -291,9 +324,7 @@ Do NOT:
 - fix another audit issue
 - refactor unrelated code
 
-If there is no existing frontend contacts destination and implementing one would require backend functionality or exceed the current frontend scope, explain the limitation instead of inventing behavior.
-
-Fix ONLY F8.
+Fix ONLY S2.
 
 ---
 
@@ -312,7 +343,7 @@ Do NOT skip ahead unless:
 
 Dashboard "View all" contacts button does nothing.
 
-STATUS: NEXT
+STATUS: COMPLETED (see COMPLETED ISSUES above)
 
 ---
 
@@ -322,7 +353,7 @@ STATUS: NEXT
 
 `http://localhost:5000`
 
-STATUS: PENDING
+STATUS: NEXT
 
 ---
 
