@@ -63,13 +63,14 @@ S2
 
 ## Next issue
 
-S3
+A1
 
 ## Current state
 
-- S2 has been fixed, committed, and pushed by the user.
-- S3 is the next issue (audit note / by-design tradeoff — review scope before changing).
-- Do NOT start S3 until the user explicitly tells you to continue.
+- The last committed issue is S2 (no code change since then).
+- S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
+- A1 is the next issue.
+- Do NOT start A1 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -308,22 +309,53 @@ USER CONFIRMED S2 IS COMMITTED AND PUSHED.
 
 ---
 
+## S3 — JWT stored in localStorage
+
+STATUS: REVIEWED — NO CODE CHANGE
+
+Reason:
+Documented by-design tradeoff; no justified frontend-only fix.
+
+Investigation findings:
+- JWTs are stored in localStorage (Login.jsx, main.tsx), attached to requests via the
+  axios interceptor in api.js, and removed on logout / 401 responses.
+- Changing to httpOnly cookies requires backend changes — out of scope.
+- sessionStorage does not provide meaningful XSS protection.
+- An in-memory solution would require an authentication architecture rewrite.
+- No XSS vector was found in the frontend (no dangerouslySetInnerHTML / innerHTML / eval).
+- No concrete frontend-only fix is justified within the project's current scope.
+
+S3 should NOT be treated as a bug requiring a code fix.
+
+USER CONFIRMED: NO CODE CHANGE — DOCUMENTED BY-DESIGN TRADEOFF.
+
+---
+
 # NEXT ISSUE
 
-## S3 — JWT stored in localStorage
+## A1 — Modals lack focus trap, ARIA roles, ESC handling
 
 STATUS: NEXT
 
 Original audit finding:
 
-JWT stored in localStorage.
+Modals lack:
+- focus trap
+- ARIA roles
+- ESC handling
+
+Current behavior:
+- Modal components render without a focus trap, ARIA roles, or ESC-to-close handling.
+
+Expected behavior:
+- Modals should trap focus, expose proper ARIA roles, and close on the ESC key.
 
 IMPORTANT:
-This item is recorded as an audit note / by-design tradeoff.
+Before changing anything:
 
-1. Review the original scope and user instruction before changing anything.
-2. S3 may already be intended behavior and may not require a code change.
-3. Do NOT automatically change this item without that review.
+1. Identify all modal components in the frontend (e.g., PaymentModal, RoundUpPopup, QRScanner, Dashboard modals).
+2. Confirm the current modal markup and the existing `animate-fadeIn` / `animate-slideUp` styling.
+3. Keep the change minimal and consistent with the existing modal structure.
 
 Do NOT:
 - modify backend files
@@ -332,7 +364,7 @@ Do NOT:
 - fix another audit issue
 - refactor unrelated code
 
-Fix ONLY S3 (in accordance with the scope/user-instruction review).
+Fix ONLY A1.
 
 ---
 
@@ -369,9 +401,10 @@ STATUS: COMPLETED (see COMPLETED ISSUES above)
 
 JWT stored in localStorage.
 
-STATUS: NEXT (audit note / by-design tradeoff)
+STATUS: REVIEWED — NO CODE CHANGE (documented by-design tradeoff)
 
-Do not automatically change this without reviewing the original scope and user instruction.
+Reviewed and accepted as a by-design tradeoff — see COMPLETED / RESOLVED ISSUES above.
+No code change was made. Do NOT treat as a bug requiring a fix.
 
 ---
 
@@ -384,7 +417,7 @@ Modals lack:
 - ARIA roles
 - ESC handling
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## A2
 
