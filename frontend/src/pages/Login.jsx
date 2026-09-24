@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Wallet, Mail, Lock, ArrowRight } from "lucide-react";
-import { loginUser } from "../services/api";
+import { loginUser, API_BASE_URL } from "../services/api";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -60,7 +60,7 @@ export default function Login() {
           {/* Google OAuth */}
           <div className="mb-4">
             <button
-              onClick={() => (window.location.href = "http://localhost:5000/api/auth/google")}
+              onClick={() => (window.location.href = `${API_BASE_URL}/auth/google`)}
               className="w-full py-3 px-4 bg-white/8 text-white font-semibold rounded-xl hover:bg-white/12 transition-all flex items-center justify-center gap-3 mb-3"
             >
               <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center text-sm font-bold text-black">G</div>
