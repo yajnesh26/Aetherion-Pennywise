@@ -59,18 +59,19 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-S2
+A1
 
 ## Next issue
 
-A1
+A2
 
 ## Current state
 
-- The last committed issue is S2 (no code change since then).
+- The last committed issue is A1 (FIXED + COMMITTED + PUSHED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
-- A1 is the next issue.
-- Do NOT start A1 until the user explicitly tells you to continue.
+- A1 is fixed and pushed.
+- A2 is the next issue.
+- Do NOT start A2 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -331,40 +332,106 @@ USER CONFIRMED: NO CODE CHANGE — DOCUMENTED BY-DESIGN TRADEOFF.
 
 ---
 
+## A1 — Modals lack focus trap, ARIA roles, ESC handling
+
+STATUS: FIXED + COMMITTED + PUSHED
+
+Files changed:
+- frontend/src/hooks/useFocusTrap.js (NEW)
+- frontend/src/components/PaymentModal.jsx
+- frontend/src/components/RoundUpPopup.jsx
+- frontend/src/components/QRScanner.jsx
+- frontend/src/pages/Dashboard.jsx
+
+Fix:
+- Added a shared `useFocusTrap(containerRef, { onEscape, active })` hook.
+  The hook keeps Tab / Shift+Tab focus inside the dialog, moves focus in on
+  open, pins focus to the container when it has no tabbable elements, and
+  restores focus to the trigger element on close.
+  `onEscape` is held in a ref so the effect is not re-run by inline arrow props.
+- PaymentModal: `role="dialog"`, `aria-modal="true"`, `aria-labelledby` on a new
+  `sr-only` heading ("Pay {contact}"), `tabIndex={-1}`, and a focus trap.
+- PaymentModal: Escape is routed through the EXISTING `handleClose`, so the
+  `if (processing) return;` guard from C3 still blocks dismissal while a
+  payment is in flight.
+- RoundUpPopup: the backdrop is now clickable (`onClick={onSkip}`), consistent
+  with the X button and the Skip button. This was the specific A1 sub-defect.
+- RoundUpPopup: `role="dialog"`, `aria-modal="true"`, `aria-labelledby` on the
+  existing "Payment Successful!" heading, `aria-describedby` on the payment
+  summary paragraph, `tabIndex={-1}`, and a focus trap.
+- QRScanner: `role="dialog"`, `aria-modal="true"`, `aria-labelledby` on the
+  existing "Scan UPI QR" heading, `tabIndex={-1}`, and a focus trap.
+- Dashboard "All Contacts" modal: same dialog semantics, labelling, Escape and
+  focus trap. It is conditionally rendered inside Dashboard, so the hook is
+  called at top level with `active: allContactsOpen`.
+- Close controls in all four modals got explicit `aria-label`s so they stay
+  accessible.
+
+Deliberately NOT changed (per-component behaviour differences):
+- PaymentModal backdrop click behaviour is unchanged.
+- QRScanner backdrop was left NON-clickable. It was not flagged by the audit,
+  and making a camera view dismiss on a stray tap would be a regression.
+- RoundUpPopup Escape/backdrop dismissal during the 1s post-`handleSave` timer
+  matches the X button's pre-existing behaviour.
+- `AddGoalFromLink` and the Goals/auth-page panels were inspected and are inline
+  page content, not overlays — out of scope.
+- RoundUpPopup's `handleRoundUpSave` is currently a no-op in Dashboard; that is
+  a separate issue and was NOT touched.
+
+Verification:
+- `npx eslint src/hooks/useFocusTrap.js src/components/PaymentModal.jsx src/components/RoundUpPopup.jsx src/components/QRScanner.jsx src/pages/Dashboard.jsx`
+  reported only the 8 pre-existing C4 violations (useFocusTrap.js and
+  Dashboard.jsx clean).
+- `npm run lint` reported the identical 9 pre-existing violations — same rules,
+  same count as the pre-change baseline. NOT fixed (C4 dead-code violations).
+- `npm run build` passed.
+- No true browser interaction test was available (the project has no test
+  framework and no test files). Keyboard paths were verified by code review
+  only.
+
+USER CONFIRMED A1 IS COMMITTED AND PUSHED.
+
+---
+
 # NEXT ISSUE
 
-## A1 — Modals lack focus trap, ARIA roles, ESC handling
+## A2 — Icon-only buttons lack accessible names
 
 STATUS: NEXT
 
 Original audit finding:
 
-Modals lack:
-- focus trap
-- ARIA roles
-- ESC handling
+Icon-only buttons lack accessible names.
 
 Current behavior:
-- Modal components render without a focus trap, ARIA roles, or ESC-to-close handling.
+- Buttons that render only an icon (no visible text) have no accessible name,
+  so screen readers announce them as just "button".
 
 Expected behavior:
-- Modals should trap focus, expose proper ARIA roles, and close on the ESC key.
+- Every icon-only button should expose an accessible name, e.g. via
+  `aria-label` (or `aria-labelledby` when visible text is absent).
 
 IMPORTANT:
 Before changing anything:
 
-1. Identify all modal components in the frontend (e.g., PaymentModal, RoundUpPopup, QRScanner, Dashboard modals).
-2. Confirm the current modal markup and the existing `animate-fadeIn` / `animate-slideUp` styling.
-3. Keep the change minimal and consistent with the existing modal structure.
+1. Find every icon-only button in the frontend.
+2. Prefer an `aria-label` that matches the button's visible purpose.
+3. Where a visible text label already exists, do NOT add a redundant
+   `aria-label` that could contradict the visible text.
+4. Keep the change minimal — attribute additions only, no layout or
+   behaviour changes.
+
+NOTE:
+A1 already added `aria-label`s to the close controls of PaymentModal,
+RoundUpPopup, QRScanner and the Dashboard "All Contacts" modal, because A1
+required close controls to remain accessible. Do NOT duplicate that work.
 
 Do NOT:
 - modify backend files
-- invent backend APIs
-- build an unnecessary backend feature
 - fix another audit issue
 - refactor unrelated code
 
-Fix ONLY A1.
+Fix ONLY A2.
 
 ---
 
@@ -408,6 +475,25 @@ No code change was made. Do NOT treat as a bug requiring a fix.
 
 ---
 
+## A1
+
+Modals lack:
+- focus trap
+- ARIA roles
+- ESC handling
+
+STATUS: COMPLETED (see COMPLETED ISSUES above)
+
+---
+
+## A2
+
+Icon-only buttons lack accessible names.
+
+STATUS: NEXT
+
+---
+
 # ACCESSIBILITY
 
 ## A1
@@ -417,13 +503,13 @@ Modals lack:
 - ARIA roles
 - ESC handling
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 ## A2
 
 Icon-only buttons lack accessible names.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## A3
 
