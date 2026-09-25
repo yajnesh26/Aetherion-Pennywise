@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import { X, IndianRupee, ArrowRight, AlertCircle } from "lucide-react";
+import useFocusTrap from "../hooks/useFocusTrap";
 
 const avatarColors = [
   "from-emerald-500 to-teal-400",
@@ -14,6 +15,8 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
   const [phoneNumber, setPhoneNumber] = useState(contact?.phone || "");
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const titleId = useId();
+  const dialogRef = useRef(null);
 
   const handlePay = async () => {
     const numAmount = parseFloat(amount);
@@ -56,6 +59,10 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
     onClose?.();
   };
 
+  // Keeps focus inside the modal and closes it on Escape.
+  // handleClose already refuses to close while a payment is in flight.
+  useFocusTrap(dialogRef, { onEscape: handleClose });
+
   const quickAmounts = [100, 200, 500, 1000, 2000, 5000];
   const initials = contact?.name
     ?.split(" ")
@@ -73,11 +80,23 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md bg-slate-900 border border-slate-700/60 rounded-t-3xl sm:rounded-3xl p-6 animate-slideUp shadow-2xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="relative w-full max-w-md bg-slate-900 border border-slate-700/60 rounded-t-3xl sm:rounded-3xl p-6 animate-slideUp shadow-2xl"
+      >
+        <h2 id={titleId} className="sr-only">
+          Pay {contact?.name || "contact"}
+        </h2>
+
         {/* Close button */}
         <button
           onClick={handleClose}
           disabled={processing}
+          aria-label="Close payment dialog"
           className="absolute top-4 right-4 p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors disabled:opacity-40"
         >
           <X className="w-5 h-5" />

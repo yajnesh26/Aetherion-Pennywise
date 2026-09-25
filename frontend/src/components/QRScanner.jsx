@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback, useId } from "react";
+import useFocusTrap from "../hooks/useFocusTrap";
 
 function DynamicScanner({ scannerRef, onDecode, onError }) {
   const [ScannerComp, setScannerComp] = useState(null);
@@ -55,6 +56,13 @@ export default function QRScanner({ onScan, onClose }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [scanned, setScanned] = useState(false);
   const scannerRef = useRef(null);
+  const titleId = useId();
+  const dialogRef = useRef(null);
+
+  // Keeps focus inside the scanner dialog and closes it on Escape.
+  // The backdrop is intentionally not clickable so a stray tap cannot
+  // drop the camera view.
+  useFocusTrap(dialogRef, { onEscape: onClose });
 
   const normalizeResult = useCallback((result) => {
     if (!result) return null;
@@ -121,9 +129,16 @@ export default function QRScanner({ onScan, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-slate-900 p-4 rounded-xl w-[350px]">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="bg-slate-900 p-4 rounded-xl w-[350px]"
+      >
 
-        <h2 className="text-white mb-3 text-center font-semibold">Scan UPI QR</h2>
+        <h2 id={titleId} className="text-white mb-3 text-center font-semibold">Scan UPI QR</h2>
 
         {errorMsg ? (
           <div className="text-sm text-red-300">

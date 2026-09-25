@@ -1,8 +1,16 @@
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import { CheckCircle2, PiggyBank, ArrowUp, X, Sparkles } from "lucide-react";
+import useFocusTrap from "../hooks/useFocusTrap";
 
 export default function RoundUpPopup({ payment, roundUpInfo, onSave, onSkip }) {
   const [saved, setSaved] = useState(false);
+  const titleId = useId();
+  const summaryId = useId();
+  const dialogRef = useRef(null);
+
+  // Keeps focus inside the popup and dismisses it on Escape, matching the
+  // close button, the Skip button and the backdrop.
+  useFocusTrap(dialogRef, { onEscape: onSkip });
 
   const original = payment?.amount || 0;
 
@@ -35,13 +43,25 @@ export default function RoundUpPopup({ payment, roundUpInfo, onSave, onSkip }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center animate-fadeIn">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onSkip}
+      />
 
       {/* Popup */}
-      <div className="relative w-full max-w-sm bg-slate-900 border border-slate-700/60 rounded-t-3xl sm:rounded-3xl p-6 animate-slideUp shadow-2xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={summaryId}
+        tabIndex={-1}
+        className="relative w-full max-w-sm bg-slate-900 border border-slate-700/60 rounded-t-3xl sm:rounded-3xl p-6 animate-slideUp shadow-2xl"
+      >
         {/* Skip/Close button */}
         <button
           onClick={onSkip}
+          aria-label="Skip round-up and close"
           className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
         >
           <X className="w-4 h-4" />
@@ -56,8 +76,8 @@ export default function RoundUpPopup({ payment, roundUpInfo, onSave, onSkip }) {
 
         {/* Payment success text */}
         <div className="text-center mb-5">
-          <h3 className="text-lg font-bold text-white mb-1">Payment Successful!</h3>
-          <p className="text-slate-400 text-sm">
+          <h3 id={titleId} className="text-lg font-bold text-white mb-1">Payment Successful!</h3>
+          <p id={summaryId} className="text-slate-400 text-sm">
             ₹{original.toLocaleString()} paid to{" "}
             <span className="text-slate-200">{recipientLabel}</span>
           </p>

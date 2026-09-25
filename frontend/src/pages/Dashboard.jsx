@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useId, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, Sparkles, Loader2, AlertCircle, X } from "lucide-react";
 import PaymentActions from "../components/PaymentActions";
@@ -10,6 +10,7 @@ import TransactionList from "../components/TransactionList";
 import { getGoals, makePayment } from "../services/api";
 import QRScanner from "../components/QRScanner";
 import { parseUPIQR } from "../utils/parseUpiQR";
+import useFocusTrap from "../hooks/useFocusTrap";
 
 // ── Static contacts (could be fetched from backend later) ──
 const dummyContacts = [
@@ -39,6 +40,14 @@ export default function Dashboard() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanError, setScanError] = useState("");
   const [allContactsOpen, setAllContactsOpen] = useState(false);
+  const allContactsDialogRef = useRef(null);
+  const allContactsTitleId = useId();
+
+  // Keeps focus inside the "All Contacts" modal and closes it on Escape.
+  useFocusTrap(allContactsDialogRef, {
+    onEscape: () => setAllContactsOpen(false),
+    active: allContactsOpen,
+  });
 
   // Greeting
   const hour = new Date().getHours();
@@ -315,14 +324,22 @@ export default function Dashboard() {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setAllContactsOpen(false)}
           />
-          <div className="relative w-full max-w-md bg-slate-900 border border-slate-700/60 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl max-h-[80vh] overflow-y-auto">
+          <div
+            ref={allContactsDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={allContactsTitleId}
+            tabIndex={-1}
+            className="relative w-full max-w-md bg-slate-900 border border-slate-700/60 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl max-h-[80vh] overflow-y-auto"
+          >
             <button
               onClick={() => setAllContactsOpen(false)}
+              aria-label="Close all contacts"
               className="absolute top-4 right-4 p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-white font-semibold">All Contacts</h3>
+            <h3 id={allContactsTitleId} className="text-white font-semibold">All Contacts</h3>
             <p className="text-slate-400 text-sm mb-6">
               {dummyContacts.length} contacts
             </p>
