@@ -120,6 +120,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
         </div>
         <button
           onClick={onClose}
+          aria-label="Close Add from Product Link panel"
           className="p-1.5 rounded-lg hover:bg-slate-700/50 text-slate-500 hover:text-slate-300 transition-colors"
         >
           <X className="w-4 h-4" />

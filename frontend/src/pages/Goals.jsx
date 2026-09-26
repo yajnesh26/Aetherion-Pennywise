@@ -217,7 +217,11 @@ export default function Goals() {
         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
           <p className="text-sm text-red-300 flex-1">{error}</p>
-          <button onClick={() => setError("")} className="text-red-400 hover:text-red-300">
+          <button
+            onClick={() => setError("")}
+            aria-label="Dismiss error message"
+            className="text-red-400 hover:text-red-300"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>

@@ -207,6 +207,7 @@ export default function Dashboard() {
           <p className="text-sm text-red-300 flex-1">{scanError}</p>
           <button
             onClick={() => setScanError("")}
+            aria-label="Dismiss QR scan error"
             className="text-red-400 hover:text-red-300 shrink-0"
           >
             <X className="w-4 h-4" />

@@ -178,6 +178,7 @@ export default function Chatbot() {
           <button
             type="submit"
             disabled={!input.trim() || typing}
+            aria-label="Send message"
             className="px-4 py-3 bg-gradient-to-r from-accent to-indigo-400 text-white rounded-xl shadow-lg shadow-indigo-500/20 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-200 disabled:opacity-40 disabled:shadow-none"
           >
             <Send className="w-4 h-4" />
