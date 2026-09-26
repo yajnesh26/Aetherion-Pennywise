@@ -59,19 +59,20 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-A1
+A2
 
 ## Next issue
 
-A2
+A3
 
 ## Current state
 
-- The last committed issue is A1 (FIXED + COMMITTED + PUSHED).
+- The last committed issue is A2 (FIXED + COMMITTED + PUSHED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
-- A2 is the next issue.
-- Do NOT start A2 until the user explicitly tells you to continue.
+- A2 is fixed, committed and pushed.
+- A3 is the next issue.
+- Do NOT start A3 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -393,45 +394,116 @@ USER CONFIRMED A1 IS COMMITTED AND PUSHED.
 
 ---
 
+## A2 — Icon-only buttons lack accessible names
+
+STATUS: FIXED + COMMITTED + PUSHED
+
+Files changed:
+- frontend/src/components/Navbar.jsx
+- frontend/src/components/GoalRow.jsx
+- frontend/src/components/GoalsTable.jsx
+- frontend/src/components/AddGoalFromLink.jsx
+- frontend/src/pages/Chatbot.jsx
+- frontend/src/pages/Goals.jsx
+- frontend/src/pages/Dashboard.jsx
+
+Fix (frontend accessibility fix only — no functional change):
+- Added `aria-label` to every live icon-only button so each one exposes an
+  accessible name instead of being announced as a bare "button".
+- Navbar hamburger: `aria-label={mobileOpen ? "Close menu" : "Open menu"}` so
+  the name tracks the Menu / X icon toggle.
+- GoalRow (desktop table row) delete button: `aria-label={`Delete goal ${goal.name}`}`.
+  The existing `title="Delete goal"` tooltip was kept, so the hover affordance
+  and visuals are unchanged.
+- GoalsTable (mobile card) delete button: same `Delete goal {name}` label.
+- Chatbot submit button: `aria-label="Send message"`.
+- Additional live icon-only buttons found during the required A2 sweep
+  ("find every icon-only button in the frontend"):
+  - Goals.jsx error banner dismiss (X) — `aria-label="Dismiss error message"`
+  - Dashboard.jsx QR scan error banner dismiss (X) — `aria-label="Dismiss QR scan error"`
+  - AddGoalFromLink.jsx panel close (X) — `aria-label="Close Add from Product Link panel"`
+- Every other `<button>` in the frontend was inspected and already has visible
+  text (PaymentActions, QRScanner, Goals add / create / mode toggles, Chatbot
+  suggestion chips, ContactCard, Login, Register, SetupProfile), so no
+  redundant `aria-label` contradicting visible text was added.
+
+Already resolved by A1 (verified, deliberately NOT modified again):
+- PaymentModal close X already had `aria-label="Close payment dialog"`.
+- RoundUpPopup close X already had `aria-label="Skip round-up and close"`.
+- Dashboard "All Contacts" modal close X already had `aria-label="Close all contacts"`.
+
+Deliberately NOT changed:
+- `GoalCard.jsx` has an icon-only `Trash2` delete button, but `GoalCard` is
+  dead code scheduled for removal under D1, so it was NOT modified. Tracked
+  under D1 instead of A2.
+- No `aria-expanded` was added to the Navbar hamburger — that is a state hint,
+  not an accessible name, so it is out of A2 scope.
+- No source file, layout, styling, or behaviour was refactored.
+- No backend changes.
+
+Verification:
+- Targeted `npx eslint` on all 7 changed files: clean, 0 problems.
+- `npm run lint`: the same 9 pre-existing C4 violations (ContactCard.jsx,
+  PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same rules, same count
+  as the pre-change baseline. NOT fixed (C4 dead-code violations).
+- `npm run build` passed.
+- `git diff --stat` confirmed attribute-only changes (7 files, +11 / -1).
+- The project has no test framework and no browser / screen-reader automated
+  testing, so the accessibility behaviour was verified by source and code
+  inspection only.
+
+LIMITATIONS:
+- No automated accessibility/browser verification exists in this project.
+- `GoalCard.jsx` remains unlabelled (dead code, see D1).
+
+USER CONFIRMED A2 IS COMMITTED AND PUSHED.
+
+---
+
 # NEXT ISSUE
 
-## A2 — Icon-only buttons lack accessible names
+## A3 — Placeholder-only form inputs (no `<label>`)
 
 STATUS: NEXT
 
 Original audit finding:
 
-Icon-only buttons lack accessible names.
+Placeholder-only form inputs have no labels.
 
 Current behavior:
-- Buttons that render only an icon (no visible text) have no accessible name,
-  so screen readers announce them as just "button".
+- Form inputs are identified only by their `placeholder` attribute and have no
+  associated `<label>`, so the accessible name is not reliably exposed and
+  placeholders disappear as soon as the user types.
+
+Original audit locations:
+- `frontend/src/pages/SetupProfile.jsx:54-57` — all four fields
+- `frontend/src/components/PaymentModal.jsx:90-117` — phone number and note
+- `frontend/src/components/AddGoalFromLink.jsx:230-236`
 
 Expected behavior:
-- Every icon-only button should expose an accessible name, e.g. via
-  `aria-label` (or `aria-labelledby` when visible text is absent).
+- Associate a visible `<label>` with each relevant input, or use an appropriate
+  `aria-label` / `aria-labelledby` where a visible label is not suitable.
 
 IMPORTANT:
 Before changing anything:
 
-1. Find every icon-only button in the frontend.
-2. Prefer an `aria-label` that matches the button's visible purpose.
-3. Where a visible text label already exists, do NOT add a redundant
-   `aria-label` that could contradict the visible text.
-4. Keep the change minimal — attribute additions only, no layout or
-   behaviour changes.
-
-NOTE:
-A1 already added `aria-label`s to the close controls of PaymentModal,
-RoundUpPopup, QRScanner and the Dashboard "All Contacts" modal, because A1
-required close controls to remain accessible. Do NOT duplicate that work.
+1. Inspect the current source at the locations above and compare it with this
+   description — do not assume the audit state is unchanged.
+2. Preserve the existing UI and functionality. Prefer a visually-hidden
+   (`sr-only`) label over any layout change when a visible label would alter
+   the current design.
+3. Keep the change minimal — label/`aria` wiring only.
+4. Do NOT duplicate work already done by earlier issues (A1 already added
+   `aria-label`s to modal close controls).
 
 Do NOT:
 - modify backend files
-- fix another audit issue
+- fix another audit issue (A4 alerts, A5 contrast / reduced motion, etc.)
 - refactor unrelated code
+- fix the 9 pre-existing C4 lint violations
+- modify dead-code items D1-D7
 
-Fix ONLY A2.
+Fix ONLY A3.
 
 ---
 
@@ -490,6 +562,14 @@ STATUS: COMPLETED (see COMPLETED ISSUES above)
 
 Icon-only buttons lack accessible names.
 
+STATUS: COMPLETED (see COMPLETED ISSUES above)
+
+---
+
+## A3
+
+Placeholder-only form inputs have no labels.
+
 STATUS: NEXT
 
 ---
@@ -509,13 +589,13 @@ STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 Icon-only buttons lack accessible names.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 ## A3
 
 Placeholder-only form inputs have no labels.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## A4
 
