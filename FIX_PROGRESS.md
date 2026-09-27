@@ -59,20 +59,21 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-A2
+A3
 
 ## Next issue
 
-A3
+A4
 
 ## Current state
 
-- The last committed issue is A2 (FIXED + COMMITTED + PUSHED).
+- The last committed issue is A3 (FIXED + COMMITTED + PUSHED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
-- A3 is the next issue.
-- Do NOT start A3 until the user explicitly tells you to continue.
+- A3 is fixed, committed and pushed.
+- A4 is the next issue.
+- Do NOT start A4 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -460,50 +461,155 @@ USER CONFIRMED A2 IS COMMITTED AND PUSHED.
 
 ---
 
+## A3 — Placeholder-only form inputs (no `<label>`)
+
+STATUS: FIXED + COMMITTED + PUSHED
+
+Files changed:
+- frontend/src/pages/SetupProfile.jsx
+- frontend/src/components/PaymentModal.jsx
+- frontend/src/components/AddGoalFromLink.jsx
+- frontend/src/pages/Chatbot.jsx
+
+Fix (frontend accessibility fix only — no functional change):
+- Root cause: a `placeholder` is not an accessible name. It is only a hint, it is
+  exposed unreliably by assistive tech, and it disappears as soon as the user
+  types. These inputs therefore had no programmatic accessible name at all.
+- SetupProfile.jsx: all four banking fields (phone number, account number, IFSC
+  code, UPI ID) received a visually-hidden `sr-only` `<label>` with `htmlFor`
+  plus a matching `id`. Static ids were used because the existing `name`
+  attributes are already unique form-wide and the page renders one instance.
+- PaymentModal.jsx: the amount, phone number and note inputs received
+  `sr-only` labels ("Amount", "Phone number", "Note (optional)") wired with
+  `htmlFor` / `id`. Three new `useId()` hooks (`amountId`, `phoneNumberId`,
+  `noteId`) sit next to the existing `titleId` from A1, so no static id can
+  collide if the modal ever renders more than once.
+- AddGoalFromLink.jsx: the nickname and manual-price captions were plain
+  `<span>` elements. A `<span>` is not programmatically associated with its
+  input, so the visible caption was decorative as far as AT was concerned. Both
+  were converted in place to `<label htmlFor>` keeping the identical
+  `text-[11px] text-slate-500` classes, and each input got the matching `id`.
+  The only behavioural delta is that clicking the caption now focuses the input.
+  The Product URL input (icon only, no adjacent text) uses `aria-label`
+  instead, per the audit's "where a visible label is not suitable" allowance.
+- Chatbot.jsx: the message composer sits in a `flex gap-3` row where a visible
+  label would break the design, so it uses an `sr-only` label ("Message") plus
+  `id={messageInputId}` from a new `useId()`.
+- No `placeholder` value, `className`, handler, state or render path was
+  changed. Layout is provably unaffected: `sr-only` is `position: absolute`,
+  and a `<label>` is an inline box, so the converted captions render exactly as
+  the `<span>`s did.
+- `.sr-only` was already an established utility in this codebase (the A1 dialog
+  heading in PaymentModal.jsx), and was confirmed to be emitted in the Tailwind
+  build output.
+
+Additional live placeholder-only inputs found during the required A3 sweep
+(same defect, same issue — repo-wide `placeholder=` sweep, following the A2
+precedent):
+- PaymentModal.jsx amount input — the worst case: `placeholder="0"` with no
+  `name` and no other identifier at all.
+- AddGoalFromLink.jsx Product URL input.
+- Chatbot.jsx message input.
+
+Deliberately NOT changed:
+- `Login.jsx:79,98`, `Register.jsx:65,84,103` and `Goals.jsx:321,333` render a
+  visible `<label>` but do not associate it (no `htmlFor`/`id`, no wrapping).
+  Those are NOT placeholder-only inputs, so "visible label not associated" is a
+  different defect class than A3's title. A different issue is needed for them;
+  do NOT fold them into another issue silently.
+- `GoalCard.jsx` is dead code scheduled for removal under D1, so it was NOT
+  modified and remains unlabelled. Tracked under D1.
+- Format hints such as `"Phone number (10 digits)"` were deliberately left in
+  the `placeholder` only. Promoting them to a visible or `aria-described` hint
+  would alter the current design, so it is out of A3 scope.
+- No A1/A2 work was redone. Modal close controls already had `aria-label`s.
+- No source file, layout, styling, or behaviour was refactored.
+- No backend changes.
+
+Verification:
+- Targeted `npx eslint src/pages/SetupProfile.jsx src/components/PaymentModal.jsx
+  src/components/AddGoalFromLink.jsx src/pages/Chatbot.jsx`: the only error is
+  the pre-existing C4 dead-code `avatarColors` in PaymentModal.jsx:5.
+  SetupProfile.jsx, AddGoalFromLink.jsx and Chatbot.jsx are clean.
+- `npm run lint`: the same 9 pre-existing C4 violations (ContactCard.jsx,
+  PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same rules, same count
+  as the pre-change baseline. NOT fixed (C4 dead-code violations).
+- `npm run build` passed (`tsc -b && vite build`). The >500 kB chunk-size
+  warning is pre-existing (see P1).
+- `.sr-only` rule confirmed present in the emitted `dist/assets/index-*.css`.
+- `git diff --stat` confirmed label/aria wiring only (4 files, +47 / -10).
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+
+LIMITATIONS:
+- No automated browser / screen-reader verification exists in this project
+  (no test framework, no test files). The accessible-name wiring was verified
+  by source review, the ESLint/TypeScript build and the CSS output check only.
+- The additional inputs listed above were not in the audit's original line
+  list; if the user considers that scope too wide, they can be reverted
+  independently without affecting the audit-named locations.
+
+USER CONFIRMED A3 IS COMMITTED AND PUSHED.
+
+---
+
 # NEXT ISSUE
 
-## A3 — Placeholder-only form inputs (no `<label>`)
+## A4 — Native `alert()` for inline validation errors
 
 STATUS: NEXT
 
 Original audit finding:
 
-Placeholder-only form inputs have no labels.
+Native `alert()` is used for inline validation.
 
 Current behavior:
-- Form inputs are identified only by their `placeholder` attribute and have no
-  associated `<label>`, so the accessible name is not reliably exposed and
-  placeholders disappear as soon as the user types.
+- Validation failures are reported with the native browser `alert()` modal
+  instead of the inline error UI the rest of the app already uses. A native
+  alert is a blocking, unstyled, screen-reader-interrupting dialog that is
+  visually and behaviourally inconsistent with the frontend's own error
+  patterns.
 
 Original audit locations:
-- `frontend/src/pages/SetupProfile.jsx:54-57` — all four fields
-- `frontend/src/components/PaymentModal.jsx:90-117` — phone number and note
-- `frontend/src/components/AddGoalFromLink.jsx:230-236`
+- `frontend/src/components/PaymentModal.jsx:25`
+- `frontend/src/pages/Dashboard.jsx:118`
+- `frontend/src/pages/Goals.jsx:183`
 
-Expected behavior:
-- Associate a visible `<label>` with each relevant input, or use an appropriate
-  `aria-label` / `aria-labelledby` where a visible label is not suitable.
+Expected direction:
+- Replace the native `alert()` validation errors with the EXISTING inline error
+  UI patterns already used by the frontend, so the error is rendered in-page
+  next to the control that failed.
+- Preserve the existing validation logic, the existing conditions, and the
+  existing message wording as closely as possible.
+- Do NOT redesign the error system. Reuse the inline error pattern that is
+  already in each file; do not build a new shared error component, do not
+  introduce a toast/notification library.
 
 IMPORTANT:
 Before changing anything:
 
 1. Inspect the current source at the locations above and compare it with this
    description — do not assume the audit state is unchanged.
-2. Preserve the existing UI and functionality. Prefer a visually-hidden
-   (`sr-only`) label over any layout change when a visible label would alter
-   the current design.
-3. Keep the change minimal — label/`aria` wiring only.
-4. Do NOT duplicate work already done by earlier issues (A1 already added
-   `aria-label`s to modal close controls).
+2. Note that C3 already established the inline-error pattern in
+   `PaymentModal.jsx` (an `error` state rendered as a red-tinted box with
+   `AlertCircle` above the Pay button). Reuse it; do not duplicate it.
+3. Note that F6 already established the inline-error pattern in `Goals.jsx`
+   (a dismissible error banner). Reuse it; do not duplicate it.
+4. Keep the change minimal — swap `alert()` for the existing inline error
+   state and nothing more.
+5. Do NOT duplicate work already done by earlier issues (C3 and F6 already
+   converted the main payment and delete-goal failure paths to inline errors;
+   A4 is only about the remaining native `alert()` validation calls).
 
 Do NOT:
 - modify backend files
-- fix another audit issue (A4 alerts, A5 contrast / reduced motion, etc.)
+- fix another audit issue (A5 contrast / reduced motion, etc.)
 - refactor unrelated code
+- redesign or centralize the error system
+- make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
 - modify dead-code items D1-D7
 
-Fix ONLY A3.
+Fix ONLY A4.
 
 ---
 
@@ -570,6 +676,14 @@ STATUS: COMPLETED (see COMPLETED ISSUES above)
 
 Placeholder-only form inputs have no labels.
 
+STATUS: COMPLETED (see COMPLETED ISSUES above)
+
+---
+
+## A4
+
+Native `alert()` used for inline validation.
+
 STATUS: NEXT
 
 ---
@@ -595,13 +709,13 @@ STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 Placeholder-only form inputs have no labels.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 ## A4
 
 Native `alert()` used for inline validation.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## A5
 
