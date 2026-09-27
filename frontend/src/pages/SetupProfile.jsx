@@ -51,10 +51,14 @@ export default function SetupProfile() {
           {error && <div className="mb-4 text-sm text-red-400">{error}</div>}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <input name="phoneNumber" value={form.phoneNumber} onChange={handleChange} placeholder="Phone number (10 digits)" required className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
-            <input name="accountNumber" value={form.accountNumber} onChange={handleChange} placeholder="Account number" required className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
-            <input name="ifscCode" value={form.ifscCode} onChange={handleChange} placeholder="IFSC code" className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
-            <input name="upiId" value={form.upiId} onChange={handleChange} placeholder="UPI ID (e.g. user@upi)" className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
+            <label htmlFor="phoneNumber" className="sr-only">Phone number</label>
+            <input id="phoneNumber" name="phoneNumber" value={form.phoneNumber} onChange={handleChange} placeholder="Phone number (10 digits)" required className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
+            <label htmlFor="accountNumber" className="sr-only">Account number</label>
+            <input id="accountNumber" name="accountNumber" value={form.accountNumber} onChange={handleChange} placeholder="Account number" required className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
+            <label htmlFor="ifscCode" className="sr-only">IFSC code</label>
+            <input id="ifscCode" name="ifscCode" value={form.ifscCode} onChange={handleChange} placeholder="IFSC code" className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
+            <label htmlFor="upiId" className="sr-only">UPI ID</label>
+            <input id="upiId" name="upiId" value={form.upiId} onChange={handleChange} placeholder="UPI ID (e.g. user@upi)" className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/40 text-white" />
 
             <button type="submit" disabled={loading} className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold">
               {loading ? "Saving…" : "Save & Continue"}

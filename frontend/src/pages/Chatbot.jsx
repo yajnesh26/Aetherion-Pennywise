@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useId, useState, useRef, useEffect } from "react";
 import { Send, Bot, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ChatMessage from "../components/ChatMessage";
@@ -23,6 +23,7 @@ export default function Chatbot() {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const chatEndRef = useRef(null);
+  const messageInputId = useId();
 
   // ── Auth guard: logged-out users are sent to login ─────────
   useEffect(() => {
@@ -168,7 +169,11 @@ export default function Chatbot() {
           onSubmit={handleSubmit}
           className="border-t border-slate-700/50 px-4 sm:px-6 py-4 flex gap-3"
         >
+          <label htmlFor={messageInputId} className="sr-only">
+            Message
+          </label>
           <input
+            id={messageInputId}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}

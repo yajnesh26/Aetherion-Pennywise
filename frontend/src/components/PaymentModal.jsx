@@ -16,6 +16,9 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
   const titleId = useId();
+  const amountId = useId();
+  const phoneNumberId = useId();
+  const noteId = useId();
   const dialogRef = useRef(null);
 
   const handlePay = async () => {
@@ -118,7 +121,11 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
           <div className="absolute left-4 top-1/2 -translate-y-1/2">
             <IndianRupee className="w-5 h-5 text-emerald-400" />
           </div>
+          <label htmlFor={amountId} className="sr-only">
+            Amount
+          </label>
           <input
+            id={amountId}
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -129,7 +136,11 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
         </div>
 
         {/* Phone number input */}
+        <label htmlFor={phoneNumberId} className="sr-only">
+          Phone number
+        </label>
         <input
+          id={phoneNumberId}
           type="tel"
           value={phoneNumber}
           onChange={(e) => setPhoneNumber(e.target.value)}
@@ -151,7 +162,11 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
         </div>
 
         {/* Note input */}
+        <label htmlFor={noteId} className="sr-only">
+          Note (optional)
+        </label>
         <input
+          id={noteId}
           type="text"
           value={note}
           onChange={(e) => setNote(e.target.value)}

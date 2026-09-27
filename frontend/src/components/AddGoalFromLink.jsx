@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   Link2,
   Search,
@@ -28,6 +28,9 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
   const [nickname, setNickname] = useState("");
   const [imgError, setImgError] = useState(false);
   const [adding, setAdding] = useState(false); // "Add to Goals" in flight
+  const urlId = useId();
+  const nicknameId = useId();
+  const manualPriceId = useId();
 
   const handleFetch = async () => {
     if (!url.trim()) return;
@@ -132,10 +135,12 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
         <div className="relative flex-1">
           <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <input
+            id={urlId}
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={handleKeyDown}
+            aria-label="Product URL"
             placeholder="https://www.amazon.in/dp/B0... or flipkart.com/..."
             className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm text-white placeholder-slate-500 transition-all"
           />
@@ -233,11 +238,15 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
 
                 {/* Nickname input */}
                 <div className="mb-3">
-                  <span className="text-[11px] text-slate-500">
+                  <label
+                    htmlFor={nicknameId}
+                    className="text-[11px] text-slate-500"
+                  >
                     Give this goal a nickname
-                  </span>
+                  </label>
 
                   <input
+                    id={nicknameId}
                     type="text"
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
@@ -266,10 +275,14 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
 
                 {/* Manual price override */}
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-slate-500">
+                  <label
+                    htmlFor={manualPriceId}
+                    className="text-[11px] text-slate-500"
+                  >
                     {product.price ? "Price not right?" : "Enter target price (₹)"}
-                  </span>
+                  </label>
                   <input
+                    id={manualPriceId}
                     type="number"
                     value={manualPrice}
                     onChange={(e) => setManualPrice(e.target.value)}
