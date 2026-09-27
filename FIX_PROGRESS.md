@@ -59,22 +59,24 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-A4
+A5
 
 ## Next issue
 
-A5
+P1
 
 ## Current state
 
-- The last committed issue is A4 (FIXED + COMMITTED + PUSHED).
+- The last committed issue is A5 (FIXED + COMMITTED + PUSHED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
 - A3 is fixed, committed and pushed.
 - A4 is fixed, committed and pushed.
-- A5 is the next issue.
-- Do NOT start A5 until the user explicitly tells you to continue.
+- A5 is fixed, committed and pushed.
+- The ACCESSIBILITY queue (A1-A5) is now complete.
+- P1 is the next issue.
+- Do NOT start P1 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -659,54 +661,203 @@ USER CONFIRMED A4 IS COMMITTED AND PUSHED.
 
 ---
 
+## A5 — Low-contrast text and no reduced-motion handling
+
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
+
+Files changed (14 — the commit stat is +83 / -64):
+- frontend/src/index.css
+- frontend/src/components/AddGoalFromLink.jsx
+- frontend/src/components/GoalRow.jsx
+- frontend/src/components/GoalsTable.jsx
+- frontend/src/components/Navbar.jsx
+- frontend/src/components/PaymentModal.jsx
+- frontend/src/components/PredictionGraph.jsx
+- frontend/src/components/PriorityGoalCard.jsx
+- frontend/src/components/RoundUpPopup.jsx
+- frontend/src/components/TransactionList.jsx
+- frontend/src/pages/Chatbot.jsx
+- frontend/src/pages/Goals.jsx
+- frontend/src/pages/Login.jsx
+- frontend/src/pages/Register.jsx
+
+Note: A5 was the FIRST issue in this workflow with no recorded audit locations,
+so the concrete scope was derived by read-only inspection before any edit, as
+the A5 NEXT ISSUE entry required. A1-A4 each named files/lines; A5 named none.
+
+Root cause (two independent halves):
+- Reduced motion: `index.css` defines five custom animations (`.animate-fadeIn`,
+  `.animate-slideUp`, `.animate-progressFill`, `.animate-float` (infinite) and
+  `.animate-pop`) plus transitions inside `.btn-emerald`, `.tag` and
+  `.card-hover`. Components add Tailwind `animate-spin` / `animate-pulse` /
+  `animate-bounce` and roughly 90 `transition-*` utilities. NOT ONE of them was
+  gated on the user's OS "reduce motion" preference — there was no
+  `prefers-reduced-motion` query and no Tailwind `motion-reduce:` variant
+  anywhere in the codebase.
+- Low contrast: the app renders light text on very dark surfaces (`body` is
+  `#030617`; cards are translucent `slate-800/50` / `slate-900/50` over it).
+  Two greys in the app's OWN token scale fall below WCAG AA 4.5:1 on every
+  background the app actually uses. Measured with the WCAG relative-luminance
+  formula, not eyeballed:
+  - `text-slate-400` `#94a3b8` — 7.86:1 (body) / 6.96:1 (card) / 6.96:1
+    (slate-900) => PASSES AA.
+  - `text-slate-500` `#64748b` — 4.23:1 / 3.75:1 / 3.75:1 => FAILS 4.5:1
+    EVERYWHERE.
+  - `text-slate-600` `#475569` — 2.66:1 / 2.36:1 / 2.36:1 => FAILS 4.5:1 AND
+    the 3:1 non-text threshold.
+  - `text-accent` `#06b6d4` — 8.28:1 and `text-primary` `#16a34a` — 6.10:1 both
+    PASS, so they were left alone.
+  Because the failure is UNIFORM (`slate-500` misses 4.5:1 on the lightest
+  surface in the app), there was no defensible per-element judgement call and
+  no reason to fix only "some" occurrences.
+
+Reduced-motion fix — `frontend/src/index.css` (one block after `.animate-pop`):
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+```
+- Uses `0.01ms` rather than `animation: none` on purpose. Removing the animation
+  would strand elements at their PRE-animation value — `fadeIn` would leave
+  modals transparent, `slideUp` would leave them offset 40px, `progressFill`
+  would leave bars at 0% width. Collapsing the duration lets each animation run
+  instantly and land on its final state.
+- `animation-iteration-count: 1` also neutralises the infinite `animate-float`.
+- Because the entire block is inside a media query, the default appearance for
+  users WITHOUT the setting is bit-for-bit unchanged.
+
+JS smooth-scroll fix — `frontend/src/pages/Chatbot.jsx`:
+- `scrollIntoView({ behavior: "smooth" })` could NOT be suppressed by the CSS
+  above, because an explicit JS `behavior` option takes precedence over the
+  `scroll-behavior` property. It is now guarded:
+  `const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;`
+  then `scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" })`.
+
+Contrast fix — a single mechanical token correction across the 13 live files:
+- `text-slate-500` -> `text-slate-400` (all variants, including `hover:`,
+  `group-hover:` and `placeholder:text-slate-500`)
+- `text-slate-600` -> `text-slate-400`
+- `placeholder-slate-500` / `placeholder-slate-600` -> `placeholder-slate-400`
+- This targets the NEAREST ALREADY-PASSING token in the app's own scale. No new
+  colours, no `@theme` edits, no re-theming of the app. Every affected element
+  moves from 2.36-4.23:1 to 6.96:1.
+- No markup, logic, class structure or component API changed; the diff is
+  colour tokens only.
+
+Deliberately NOT changed:
+- Dead code D1-D4, which still contains the failing tokens:
+  `GoalCard.jsx` (2 occurrences), `ProgressBar.jsx` (1), `SavingsCard.jsx` (1),
+  and the 2 occurrences inside `TransactionList.jsx:87-88` (the unused summary
+  bar). These are D1, D2, D3 and D4 respectively, so they were left untouched
+  per the standing instruction not to modify D1-D7. They are unrendered, so
+  they cause no user-visible contrast failure today, and they will disappear
+  with the dead-code items.
+- Non-text `slate-500` / `slate-600` usages were PRESERVED: `border-slate-600/50`,
+  `border-slate-600/40`, `bg-slate-700/40`, `divide-slate-700/20`, the custom
+  scrollbar colours, and the Chatbot typing-dot `bg-slate-500`. Borders and
+  backgrounds are not text, and altering them would have changed the design.
+- `TransactionList.jsx:52` — the empty-state `Receipt` icon uses
+  `text-slate-700`, which computes to 1.94:1 (below even the 3:1 non-text
+  threshold). It was deliberately NOT changed: it is arguably decorative, it
+  sits beside the PASSING "No transactions yet" heading in `text-slate-400`,
+  and `text-slate-700` is used the same decorative way in `GoalsTable.jsx:29`.
+  The WCAG 1.4.3 decorative exemption was judged to apply rather than invent a
+  target for it.
+- `AddGoalFromLink.jsx:151` — `disabled:text-slate-500` was caught by the token
+  sweep and became `disabled:text-slate-400`. Disabled controls are WCAG-exempt
+  so this was not required; it very slightly reduces how "muted" the disabled
+  Fetch button looks. Trivially revertable.
+- The 9 pre-existing C4 lint violations were NOT fixed.
+- No source file, layout, styling, or behaviour was refactored beyond the above.
+- No backend changes.
+
+Verification:
+- Targeted `npx eslint` on all 13 changed JSX files: 3 errors, all pre-existing
+  C4 dead code — `PaymentModal.jsx:5` `avatarColors`, `RoundUpPopup.jsx:2`
+  `ArrowUp`, `RoundUpPopup.jsx:20` `walletBalance`. The other 11 files clean.
+- `npm run lint`: the same 9 pre-existing C4 violations (ContactCard.jsx,
+  PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same rules, same count
+  as the pre-change baseline. NO NEW VIOLATIONS INTRODUCED. NOT fixed.
+- `npm run build` passed (`tsc -b && vite build`, 2381 modules). Re-run after the
+  TransactionList cleanup. The >500 kB chunk-size warning is pre-existing (P1).
+- Built-CSS check: `prefers-reduced-motion` confirmed present in the emitted
+  `dist/assets/index-*.css`.
+- Token sweep after the fix: zero `text-slate-500/600` and zero
+  `placeholder-slate-500/600` remain in any LIVE file.
+- EOL integrity: all 14 files verified 0 bare-LF (the repo uses
+  `core.autocrlf=true` with CRLF). One stray bare LF and one indentation slip in
+  `TransactionList.jsx` were caught and corrected mid-task; the final diff there
+  is 4 clean one-token lines.
+- `git diff --stat` confirmed 14 files, +83 / -64, all A5-related.
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+- `git status --porcelain` at commit time showed only the 14 A5 frontend files.
+- No later issue (P1-P4, D1-D7, E1-E8) was started.
+
+LIMITATIONS:
+- No automated browser / screen-reader verification exists in this project
+  (no test framework, no test files). The contrast numbers were computed from
+  the WCAG relative-luminance formula against the app's own three real
+  background values, and the media query was confirmed present in the built
+  CSS, but NEITHER was confirmed in a rendering engine.
+- The result was NOT visually inspected. The change is uniform and predictable,
+  but secondary text across the app is now one step lighter, so a designer may
+  want to eyeball it.
+- The contrast fix is broader than a "spot fix". A5 named no locations, so the
+  whole failing token class was fixed rather than cherry-picking elements. If
+  this is judged too wide, the 13 files are independent and revert cleanly.
+- This does not address WCAG 2.3.3 in general — it only makes the app HONOUR
+  the preference. Motion that is essential (e.g. the `progressFill` bar) is now
+  instant rather than removed.
+
+USER CONFIRMED A5 IS COMMITTED AND PUSHED.
+
+---
+
 # NEXT ISSUE
 
-## A5 — Low-contrast text and no reduced-motion handling
+## P1 — Large main bundle / no route-level code splitting
 
 STATUS: NEXT
 
 Original audit finding:
 
-Low-contrast text and no reduced-motion handling.
+Large main bundle / no route-level code splitting.
 
 Current behavior:
-- Some text colours do not meet contrast requirements against their
-  backgrounds.
-- Animations and transitions run regardless of the user's
-  `prefers-reduced-motion` setting.
+- The whole application ships as one large main bundle instead of being split
+  per route.
 
 Original audit scope:
-- Low-contrast text: see the audit's recorded locations for this issue.
-- Reduced motion: no `@media (prefers-reduced-motion: reduce)` handling exists
-  anywhere in the frontend.
+- See the `PERFORMANCE / QUALITY` entry for P1 and the recorded audit locations
+  for this issue.
 
 Expected direction:
-- Bring the flagged text colours up to an accessible contrast ratio.
-- Honour `prefers-reduced-motion` for the app's animations/transitions.
+- Introduce route-level code splitting so each page is loaded on demand.
 
 IMPORTANT:
 Before changing anything:
 
 1. Inspect the current source and compare it with this description — do not
-   assume the audit state is unchanged. A1, A2, A3 and A4 have all added code
-   to the affected files, so any recorded line numbers will have drifted.
-2. Keep the existing visual design language. Prefer the smallest change that
-   brings a colour to the required ratio over a broad re-theming of the app.
-3. Use the frontend's existing Tailwind colour tokens and any existing global
-   CSS entry point rather than introducing a new styling system.
-4. Do NOT invent new audit locations. If the audit did not name a specific
-   file/element, do not go hunting for extra contrast problems beyond it.
+   assume the audit state is unchanged.
+2. Preserve the existing application behaviour, routing and layout. This is a
+   bundling concern only — no visible UI change is expected.
+3. Do NOT invent requirements. Use the tooling and patterns already present in
+   the project.
 
 Do NOT:
 - modify backend files
-- fix another audit issue (P1-P4, E1-E8, etc.)
+- fix another audit issue (P2, P3, P4, D1-D7, E1-E8, etc.)
 - refactor unrelated code
-- redesign the visual theme
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
 - modify dead-code items D1-D7
 
-Fix ONLY A5. Do NOT start any later issue (P1, P2, P3, P4, D1-D7, E1-E8).
+Fix ONLY P1. Do NOT start any later issue (P2, P3, P4, D1-D7, E1-E8).
 
 ---
 
@@ -789,7 +940,7 @@ STATUS: COMPLETED (see COMPLETED ISSUES above)
 
 Low-contrast text and no reduced-motion handling.
 
-STATUS: NEXT
+STATUS: COMPLETED (see COMPLETED ISSUES above)
 
 ---
 
@@ -826,7 +977,7 @@ STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 Low-contrast text and no reduced-motion handling.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 ---
 
@@ -836,7 +987,7 @@ STATUS: NEXT
 
 Large main bundle / no route-level code splitting.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## P2
 
