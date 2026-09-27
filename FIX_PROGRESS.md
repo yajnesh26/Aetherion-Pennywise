@@ -59,21 +59,22 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-A3
+A4
 
 ## Next issue
 
-A4
+A5
 
 ## Current state
 
-- The last committed issue is A3 (FIXED + COMMITTED + PUSHED).
+- The last committed issue is A4 (FIXED + COMMITTED + PUSHED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
 - A3 is fixed, committed and pushed.
-- A4 is the next issue.
-- Do NOT start A4 until the user explicitly tells you to continue.
+- A4 is fixed, committed and pushed.
+- A5 is the next issue.
+- Do NOT start A5 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -552,64 +553,160 @@ USER CONFIRMED A3 IS COMMITTED AND PUSHED.
 
 ---
 
+## A4 — Native `alert()` for inline validation errors
+
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
+
+Files changed:
+- frontend/src/components/PaymentModal.jsx
+
+Scope check performed BEFORE any edit (the recorded audit line numbers had
+drifted, so the current source was swept instead of trusting them):
+- A repo-wide sweep for `alert(`, `window.alert`, `confirm(`, `window.confirm`
+  and `prompt(` across `frontend/src` found exactly TWO native dialogs in the
+  whole frontend.
+- `frontend/src/components/PaymentModal.jsx` — audit recorded `:25`, actual
+  position `:32` (A1 and A3 added dialog ARIA / focus-trap code and three
+  `useId()` hooks above it). This was the ONE real A4 validation defect.
+- `frontend/src/pages/Dashboard.jsx` — audit recorded `:118`, but the file now
+  contains NO `alert()` at all. ALREADY RESOLVED BY F4 (see below).
+- `frontend/src/pages/Goals.jsx` — audit recorded `:183`, actual position
+  `:189`. Present, but it is NOT a validation error (see below).
+
+Root cause:
+- `PaymentModal.jsx` validated the phone number correctly but reported the
+  failure through the native `window.alert()`. A native alert is a blocking,
+  OS-styled dialog that ignores the app's dark theme, interrupts and steals
+  focus from the dialog A1 had just made focus-trapped, and bypassed the
+  component's own `error` state, which C3 had already built for exactly this
+  purpose. The validation LOGIC was correct — only the reporting channel was
+  wrong.
+
+Already resolved — Dashboard.jsx (verified, NOT modified again):
+- F4 (commit `c6ec338`, "Fix(frontend) : Validate UPI QR codes") had already
+  replaced the original `alert("Invalid UPI QR")` with a `setScanError(...)`
+  call plus a new `scanError` state and an inline `AlertCircle` banner — which
+  is exactly the pattern A4 mandates. Confirmed via
+  `git log -S "alert(" -- frontend/src/pages/Dashboard.jsx` and by reading the
+  pre-F4 source at `39d88f9`. No Dashboard.jsx change was needed or made.
+  (F6 later added that banner's `aria-label`.)
+- DO NOT create a second Dashboard fix for A4.
+
+Deliberately NOT changed:
+- `frontend/src/pages/Goals.jsx:189` still contains
+  `alert(message || \`🎉 Purchased "${goal.name}" for ₹…!\`)`. That is the
+  fallback SUCCESS confirmation used when a goal has no `goal.url` to open, so
+  it fires after a successful purchase and never on a validation failure. It is
+  therefore NOT an A4 inline validation error. It was left untouched because the
+  only inline pattern in that file is the red ERROR banner, and rendering
+  "🎉 Purchased …" in a red error box would be a UX regression and a misuse of
+  the error pattern. It also sits directly on the code path covered by the
+  pending issue E6 ("Buy success can be invisible if `window.open` is blocked"),
+  so it needs a proper SUCCESS-notification treatment rather than a hasty A4
+  patch. If the user later decides this belongs to A4, it must be raised as a
+  new decision — do NOT silently convert it to `setError(...)`.
+- No `role="alert"` / `aria-live` was added to the error banner. C3's, F6's and
+  F4's existing banners all lack one, so adding it only in PaymentModal would
+  break the established convention. Possible separate consistency issue.
+- The error is not cleared on field edit — the user corrects the number and
+  presses Pay again, which clears it. Live re-validation would be new
+  behaviour, so it was left alone.
+- The error-handling architecture was NOT redesigned: no shared component, no
+  toast/notification library, no centralization.
+- No source file, layout, styling, or behaviour was refactored.
+- No backend changes.
+
+Fix:
+- `PaymentModal.jsx` `handlePay()`: `alert(...)` was changed to the EXISTING
+  `setError(...)` call. The message wording is preserved verbatim
+  ("Please enter a valid 10-digit phone number"), and the error renders in the
+  pre-existing C3 red-tinted `AlertCircle` box between the note field and the
+  Pay button. No new state, no new CSS, no new component.
+- Behaviour preserved: the early `return` is unchanged, so no payment request
+  is fired on invalid input and `processing` is never set (the C3 in-flight
+  guard is unaffected). The error lifecycle is correct because `setError(null)`
+  runs after this check, so a stale error is replaced by the validation message
+  and a subsequent valid attempt clears it.
+- `frontend/src/components/PaymentModal.jsx` was the ONLY file modified for A4
+  (2 insertions, 2 deletions — the `alert(...)` call and its now-obsolete
+  `// simple inline alert` comment).
+- `Backend/` was untouched.
+
+Verification:
+- Targeted `npx eslint src/components/PaymentModal.jsx`: the only error is the
+  pre-existing C4 dead-code `avatarColors` at PaymentModal.jsx:5. No new
+  violations.
+- `npm run lint`: the same 9 pre-existing C4 violations (ContactCard.jsx,
+  PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same rules, same count
+  as the pre-change baseline. NOT fixed (C4 dead-code violations).
+- `npm run build` passed (`tsc -b && vite build`). The >500 kB chunk-size
+  warning is pre-existing (see P1).
+- Post-fix `alert()` sweep across the frontend: the only remaining native
+  dialog is the non-validation success message at `Goals.jsx:189`. No native
+  `alert()` remains in any validation path.
+- `git status --porcelain` showed only
+  `M frontend/src/components/PaymentModal.jsx`.
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+
+LIMITATIONS:
+- No automated browser / screen-reader verification exists in this project
+  (no test framework, no test files). The change was verified by source
+  review, ESLint, the TypeScript/Vite build, and a post-fix grep only.
+- A4 did not eliminate every native `alert()` in the app — the Goals.jsx
+  success message remains by design (see "Deliberately NOT changed").
+
+USER CONFIRMED A4 IS COMMITTED AND PUSHED.
+
+---
+
 # NEXT ISSUE
 
-## A4 — Native `alert()` for inline validation errors
+## A5 — Low-contrast text and no reduced-motion handling
 
 STATUS: NEXT
 
 Original audit finding:
 
-Native `alert()` is used for inline validation.
+Low-contrast text and no reduced-motion handling.
 
 Current behavior:
-- Validation failures are reported with the native browser `alert()` modal
-  instead of the inline error UI the rest of the app already uses. A native
-  alert is a blocking, unstyled, screen-reader-interrupting dialog that is
-  visually and behaviourally inconsistent with the frontend's own error
-  patterns.
+- Some text colours do not meet contrast requirements against their
+  backgrounds.
+- Animations and transitions run regardless of the user's
+  `prefers-reduced-motion` setting.
 
-Original audit locations:
-- `frontend/src/components/PaymentModal.jsx:25`
-- `frontend/src/pages/Dashboard.jsx:118`
-- `frontend/src/pages/Goals.jsx:183`
+Original audit scope:
+- Low-contrast text: see the audit's recorded locations for this issue.
+- Reduced motion: no `@media (prefers-reduced-motion: reduce)` handling exists
+  anywhere in the frontend.
 
 Expected direction:
-- Replace the native `alert()` validation errors with the EXISTING inline error
-  UI patterns already used by the frontend, so the error is rendered in-page
-  next to the control that failed.
-- Preserve the existing validation logic, the existing conditions, and the
-  existing message wording as closely as possible.
-- Do NOT redesign the error system. Reuse the inline error pattern that is
-  already in each file; do not build a new shared error component, do not
-  introduce a toast/notification library.
+- Bring the flagged text colours up to an accessible contrast ratio.
+- Honour `prefers-reduced-motion` for the app's animations/transitions.
 
 IMPORTANT:
 Before changing anything:
 
-1. Inspect the current source at the locations above and compare it with this
-   description — do not assume the audit state is unchanged.
-2. Note that C3 already established the inline-error pattern in
-   `PaymentModal.jsx` (an `error` state rendered as a red-tinted box with
-   `AlertCircle` above the Pay button). Reuse it; do not duplicate it.
-3. Note that F6 already established the inline-error pattern in `Goals.jsx`
-   (a dismissible error banner). Reuse it; do not duplicate it.
-4. Keep the change minimal — swap `alert()` for the existing inline error
-   state and nothing more.
-5. Do NOT duplicate work already done by earlier issues (C3 and F6 already
-   converted the main payment and delete-goal failure paths to inline errors;
-   A4 is only about the remaining native `alert()` validation calls).
+1. Inspect the current source and compare it with this description — do not
+   assume the audit state is unchanged. A1, A2, A3 and A4 have all added code
+   to the affected files, so any recorded line numbers will have drifted.
+2. Keep the existing visual design language. Prefer the smallest change that
+   brings a colour to the required ratio over a broad re-theming of the app.
+3. Use the frontend's existing Tailwind colour tokens and any existing global
+   CSS entry point rather than introducing a new styling system.
+4. Do NOT invent new audit locations. If the audit did not name a specific
+   file/element, do not go hunting for extra contrast problems beyond it.
 
 Do NOT:
 - modify backend files
-- fix another audit issue (A5 contrast / reduced motion, etc.)
+- fix another audit issue (P1-P4, E1-E8, etc.)
 - refactor unrelated code
-- redesign or centralize the error system
+- redesign the visual theme
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
 - modify dead-code items D1-D7
 
-Fix ONLY A4.
+Fix ONLY A5. Do NOT start any later issue (P1, P2, P3, P4, D1-D7, E1-E8).
 
 ---
 
@@ -684,6 +781,14 @@ STATUS: COMPLETED (see COMPLETED ISSUES above)
 
 Native `alert()` used for inline validation.
 
+STATUS: COMPLETED (see COMPLETED ISSUES above)
+
+---
+
+## A5
+
+Low-contrast text and no reduced-motion handling.
+
 STATUS: NEXT
 
 ---
@@ -715,13 +820,13 @@ STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 Native `alert()` used for inline validation.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 ## A5
 
 Low-contrast text and no reduced-motion handling.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ---
 
