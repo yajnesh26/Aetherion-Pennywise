@@ -53,7 +53,7 @@ export default function GoalRow({
             </div>
           ) : (
             <div className="w-10 h-10 rounded-lg bg-slate-700/30 border border-slate-700/40 flex items-center justify-center shrink-0">
-              <ImageOff className="w-4 h-4 text-slate-600" />
+              <ImageOff className="w-4 h-4 text-slate-400" />
             </div>
           )}
           <div className="min-w-0">
@@ -66,7 +66,7 @@ export default function GoalRow({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="text-[10px] text-slate-500 hover:text-indigo-400 flex items-center gap-0.5 transition-colors mt-0.5"
+                className="text-[10px] text-slate-400 hover:text-indigo-400 flex items-center gap-0.5 transition-colors mt-0.5"
               >
                 View product <ExternalLink className="w-2.5 h-2.5" />
               </a>
@@ -162,7 +162,7 @@ export default function GoalRow({
               e.stopPropagation();
               onDelete?.(goal.id);
             }}
-            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-all"
+            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-all"
             title="Delete goal"
             aria-label={`Delete goal ${goal.name}`}
           >

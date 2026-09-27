@@ -34,7 +34,10 @@ export default function Chatbot() {
   }, [navigate]);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // An explicit "smooth" option overrides the CSS scroll-behavior property,
+    // so the reduced-motion preference has to be respected here as well.
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    chatEndRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
   }, [messages, typing]);
 
   const sendMessage = async (text) => {
@@ -114,7 +117,7 @@ export default function Chatbot() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-white">AI Assistant</h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-400">
             Powered by PennyWise Intelligence
           </p>
         </div>
@@ -178,7 +181,7 @@ export default function Chatbot() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask me anything about saving & investing..."
-            className="flex-1 px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none text-sm text-white placeholder-slate-500 transition-all"
+            className="flex-1 px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none text-sm text-white placeholder-slate-400 transition-all"
           />
           <button
             type="submit"

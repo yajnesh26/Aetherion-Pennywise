@@ -62,7 +62,7 @@ export default function RoundUpPopup({ payment, roundUpInfo, onSave, onSkip }) {
         <button
           onClick={onSkip}
           aria-label="Skip round-up and close"
-          className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-300 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

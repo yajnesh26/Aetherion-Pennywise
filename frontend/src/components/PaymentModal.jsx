@@ -131,7 +131,7 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0"
             autoFocus
-            className="w-full pl-12 pr-4 py-4 bg-slate-800/80 border border-slate-700/60 rounded-2xl text-white text-3xl font-bold placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-full pl-12 pr-4 py-4 bg-slate-800/80 border border-slate-700/60 rounded-2xl text-white text-3xl font-bold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
         </div>
 
@@ -145,7 +145,7 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
           value={phoneNumber}
           onChange={(e) => setPhoneNumber(e.target.value)}
           placeholder="Phone number (10 digits)"
-          className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700/40 rounded-xl text-white text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/30 transition-all mb-4"
+          className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700/40 rounded-xl text-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/30 transition-all mb-4"
         />
 
         {/* Quick amount chips */}
@@ -171,7 +171,7 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Add a note (optional)"
-          className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700/40 rounded-xl text-white text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/30 transition-all mb-5"
+          className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700/40 rounded-xl text-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/30 transition-all mb-5"
         />
 
         {/* Error */}

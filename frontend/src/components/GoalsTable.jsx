@@ -28,7 +28,7 @@ export default function GoalsTable({
       <div className="bg-slate-800/50 backdrop-blur rounded-2xl border border-slate-700/40 p-12 text-center">
         <Target className="w-14 h-14 text-slate-700 mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-slate-400 mb-1">No goals yet</h3>
-        <p className="text-slate-500 text-sm">
+        <p className="text-slate-400 text-sm">
           Click "Add Goal" to start saving towards something you want
         </p>
       </div>
@@ -44,22 +44,22 @@ export default function GoalsTable({
         <table className="w-full">
           <thead>
             <tr className="bg-slate-800/80 border-b border-slate-700/50">
-              <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                 Item
               </th>
-              <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                 Target Price
               </th>
-              <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                 Remaining
               </th>
-              <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider min-w-[180px]">
+              <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider min-w-[180px]">
                 Progress
               </th>
-              <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <th className="px-4 py-3.5 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                 ETA
               </th>
               <th className="px-4 py-3.5 w-24" />
@@ -115,7 +115,7 @@ export default function GoalsTable({
                   </div>
                 ) : (
                   <div className="w-12 h-12 rounded-lg bg-slate-700/30 border border-slate-700/40 flex items-center justify-center shrink-0">
-                    <ImageOff className="w-4 h-4 text-slate-600" />
+                    <ImageOff className="w-4 h-4 text-slate-400" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
@@ -136,7 +136,7 @@ export default function GoalsTable({
                           e.stopPropagation();
                           onDelete?.(goal.id);
                         }}
-                        className="p-1 rounded hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors"
+                        className="p-1 rounded hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-colors"
                         aria-label={`Delete goal ${goal.name}`}
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -151,7 +151,7 @@ export default function GoalsTable({
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="text-[10px] text-slate-500 hover:text-indigo-400 flex items-center gap-0.5 transition-colors mt-0.5"
+                      className="text-[10px] text-slate-400 hover:text-indigo-400 flex items-center gap-0.5 transition-colors mt-0.5"
                     >
                       View product <ExternalLink className="w-2.5 h-2.5" />
                     </a>
@@ -181,7 +181,7 @@ export default function GoalsTable({
               </div>
 
               <div className="flex items-center justify-between mt-2 text-xs">
-                <span className="text-slate-500">{progress.toFixed(0)}%</span>
+                <span className="text-slate-400">{progress.toFixed(0)}%</span>
                 {isReady && (
                   <button
                     onClick={(e) => {
@@ -202,7 +202,7 @@ export default function GoalsTable({
 
       {/* Summary row — central wallet */}
       <div className="bg-slate-800/80 border-t border-slate-700/50 px-4 py-3 flex items-center justify-between">
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-slate-400">
           {goals.length} goal{goals.length !== 1 ? "s" : ""} •{" "}
           {readyCount} ready to buy
         </span>

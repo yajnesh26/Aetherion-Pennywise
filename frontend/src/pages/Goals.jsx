@@ -265,7 +265,7 @@ export default function Goals() {
         </div>
         <div className="text-right space-y-1">
           <div>
-            <p className="text-xs text-slate-500">Avg. daily saving</p>
+            <p className="text-xs text-slate-400">Avg. daily saving</p>
             <p className="text-sm font-semibold text-emerald-400 font-mono">
               +₹{AVG_DAILY_SAVING}/day
             </p>
@@ -288,7 +288,7 @@ export default function Goals() {
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                 addMode === "manual"
                   ? "bg-indigo-500/15 text-indigo-400 border border-indigo-500/30"
-                  : "bg-slate-800/40 text-slate-500 border border-slate-700/30 hover:text-slate-300"
+                  : "bg-slate-800/40 text-slate-400 border border-slate-700/30 hover:text-slate-300"
               }`}
             >
               <Plus className="w-3.5 h-3.5" />
@@ -299,7 +299,7 @@ export default function Goals() {
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                 addMode === "link"
                   ? "bg-indigo-500/15 text-indigo-400 border border-indigo-500/30"
-                  : "bg-slate-800/40 text-slate-500 border border-slate-700/30 hover:text-slate-300"
+                  : "bg-slate-800/40 text-slate-400 border border-slate-700/30 hover:text-slate-300"
               }`}
             >
               <Link2 className="w-3.5 h-3.5" />
@@ -326,7 +326,7 @@ export default function Goals() {
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     placeholder="e.g. Sneakers, Headphones, Cricket Bat"
-                    className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm text-white placeholder-slate-500 transition-all"
+                    className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm text-white placeholder-slate-400 transition-all"
                   />
                 </div>
                 <div className="flex-1">
@@ -339,7 +339,7 @@ export default function Goals() {
                     onChange={(e) => setForm({ ...form, target: e.target.value })}
                     placeholder="e.g. 3500"
                     min="1"
-                    className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm text-white placeholder-slate-500 transition-all"
+                    className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm text-white placeholder-slate-400 transition-all"
                   />
                 </div>
                 <div className="flex items-end">

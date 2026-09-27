@@ -67,7 +67,7 @@ export default function Login() {
               Continue with Google
             </button>
 
-            <div className="flex items-center gap-3 text-slate-500 text-sm mt-2 mb-3">
+            <div className="flex items-center gap-3 text-slate-400 text-sm mt-2 mb-3">
               <div className="flex-1 h-px bg-slate-700/40" />
               <div>OR</div>
               <div className="flex-1 h-px bg-slate-700/40" />
@@ -80,7 +80,7 @@ export default function Login() {
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="email"
                   name="email"
@@ -88,7 +88,7 @@ export default function Login() {
                   onChange={handleChange}
                   required
                   placeholder="you@example.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm text-white placeholder-slate-500 transition-all"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm text-white placeholder-slate-400 transition-all"
                 />
               </div>
             </div>
@@ -99,7 +99,7 @@ export default function Login() {
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="password"
                   name="password"
@@ -107,7 +107,7 @@ export default function Login() {
                   onChange={handleChange}
                   required
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm text-white placeholder-slate-500 transition-all"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm text-white placeholder-slate-400 transition-all"
                 />
               </div>
             </div>

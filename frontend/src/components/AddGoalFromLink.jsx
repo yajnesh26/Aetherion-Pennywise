@@ -116,7 +116,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
             <h3 className="text-base font-semibold text-white">
               Add from Product Link
             </h3>
-            <p className="text-[11px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-400 mt-0.5">
               Paste an Amazon or Flipkart URL to auto-fill goal details
             </p>
           </div>
@@ -124,7 +124,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
         <button
           onClick={onClose}
           aria-label="Close Add from Product Link panel"
-          className="p-1.5 rounded-lg hover:bg-slate-700/50 text-slate-500 hover:text-slate-300 transition-colors"
+          className="p-1.5 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-slate-300 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -133,7 +133,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
       {/* URL Input */}
       <div className="flex gap-3 mb-4">
         <div className="relative flex-1">
-          <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             id={urlId}
             type="url"
@@ -142,13 +142,13 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
             onKeyDown={handleKeyDown}
             aria-label="Product URL"
             placeholder="https://www.amazon.in/dp/B0... or flipkart.com/..."
-            className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm text-white placeholder-slate-500 transition-all"
+            className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/50 border border-slate-600/50 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm text-white placeholder-slate-400 transition-all"
           />
         </div>
         <button
           onClick={handleFetch}
           disabled={loading || !url.trim()}
-          className="inline-flex items-center gap-2 px-5 py-3 bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-colors text-sm shrink-0"
+          className="inline-flex items-center gap-2 px-5 py-3 bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-700 disabled:text-slate-400 text-white font-semibold rounded-xl transition-colors text-sm shrink-0"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -161,7 +161,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
 
       {/* Supported platforms hint */}
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-[10px] text-slate-600 uppercase tracking-wider font-semibold">
+        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
           Supported:
         </span>
         <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
                   className="w-full h-full object-contain rounded-lg"
                 />
               ) : (
-                <div className="flex flex-col items-center gap-2 text-slate-600">
+                <div className="flex flex-col items-center gap-2 text-slate-400">
                   <ImageOff className="w-8 h-8" />
                   <span className="text-[10px]">No image</span>
                 </div>
@@ -215,7 +215,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
                     href={product.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] text-slate-500 hover:text-indigo-400 flex items-center gap-1 transition-colors"
+                    className="text-[10px] text-slate-400 hover:text-indigo-400 flex items-center gap-1 transition-colors"
                   >
                     View on site <ExternalLink className="w-3 h-3" />
                   </a>
@@ -240,7 +240,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
                 <div className="mb-3">
                   <label
                     htmlFor={nicknameId}
-                    className="text-[11px] text-slate-500"
+                    className="text-[11px] text-slate-400"
                   >
                     Give this goal a nickname
                   </label>
@@ -251,7 +251,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
                     placeholder="e.g. Gaming Mouse"
-                    className="mt-1 w-full px-3 py-2 rounded-lg bg-slate-800/70 border border-slate-600/40 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none text-xs text-white placeholder-slate-600 transition-all"
+                    className="mt-1 w-full px-3 py-2 rounded-lg bg-slate-800/70 border border-slate-600/40 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none text-xs text-white placeholder-slate-400 transition-all"
                   />
                 </div>
 
@@ -262,7 +262,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
                       <span className="text-xl font-bold text-emerald-400 font-mono">
                         ₹{product.price.toLocaleString("en-IN")}
                       </span>
-                      <span className="text-[10px] text-slate-500">
+                      <span className="text-[10px] text-slate-400">
                         Extracted price
                       </span>
                     </>
@@ -277,7 +277,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
                 <div className="flex items-center gap-2">
                   <label
                     htmlFor={manualPriceId}
-                    className="text-[11px] text-slate-500"
+                    className="text-[11px] text-slate-400"
                   >
                     {product.price ? "Price not right?" : "Enter target price (₹)"}
                   </label>
@@ -288,7 +288,7 @@ export default function AddGoalFromLink({ onAddGoal, onClose }) {
                     onChange={(e) => setManualPrice(e.target.value)}
                     placeholder={product.price ? "Override price" : "e.g. 2999"}
                     min="1"
-                    className={`w-36 px-3 py-1.5 rounded-lg bg-slate-800/70 border focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none text-xs text-white placeholder-slate-600 transition-all ${
+                    className={`w-36 px-3 py-1.5 rounded-lg bg-slate-800/70 border focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none text-xs text-white placeholder-slate-400 transition-all ${
                       !product.price
                         ? "border-amber-500/50 ring-1 ring-amber-500/20"
                         : "border-slate-600/40"

@@ -53,7 +53,7 @@ export default function TransactionList({ limit, compact = false }) {
         <h3 className="text-sm font-semibold text-slate-400 mb-1">
           No transactions yet
         </h3>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-400">
           Make a payment to start saving with round-ups!
         </p>
       </div>
@@ -117,7 +117,7 @@ export default function TransactionList({ limit, compact = false }) {
                   className={`w-4 h-4 ${
                     tx.savedAmount > 0
                       ? "text-emerald-400"
-                      : "text-slate-500"
+                      : "text-slate-400"
                   }`}
                 />
               </div>
@@ -125,7 +125,7 @@ export default function TransactionList({ limit, compact = false }) {
                 <p className="text-sm font-medium text-slate-200 truncate">
                   {tx.description}
                 </p>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-400 mt-0.5">
                   {formatDate(tx.createdAt)}
                 </p>
               </div>
@@ -135,10 +135,10 @@ export default function TransactionList({ limit, compact = false }) {
               <p className="text-sm text-slate-300 font-mono">
                 ₹{tx.originalAmount.toLocaleString("en-IN")}
                 {tx.savedAmount > 0 && (
-                  <span className="text-slate-600 mx-1">→</span>
+                  <span className="text-slate-400 mx-1">→</span>
                 )}
                 {tx.savedAmount > 0 && (
-                  <span className="text-slate-500">
+                  <span className="text-slate-400">
                     ₹{tx.roundedAmount.toLocaleString("en-IN")}
                   </span>
                 )}

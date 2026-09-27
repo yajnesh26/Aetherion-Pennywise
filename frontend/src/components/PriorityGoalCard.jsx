@@ -13,7 +13,7 @@ export default function PriorityGoalCard({ goals = [], totalSavings = 0 }) {
   if (!goals || goals.length === 0) {
     return (
       <div className="bg-slate-800/50 backdrop-blur rounded-2xl border border-slate-700/40 p-5 text-center">
-        <Lock className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+        <Lock className="w-8 h-8 text-slate-400 mx-auto mb-2" />
         <p className="text-sm text-slate-400">No goals set yet.</p>
         <Link
           to="/goals"
@@ -86,13 +86,13 @@ export default function PriorityGoalCard({ goals = [], totalSavings = 0 }) {
       {/* Amounts */}
       <div className="flex items-end justify-between mb-3">
         <div>
-          <p className="text-xs text-slate-500">Savings Wallet</p>
+          <p className="text-xs text-slate-400">Savings Wallet</p>
           <p className="text-xl font-bold text-white font-mono">
             ₹{totalSavings.toLocaleString("en-IN")}
           </p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-slate-500">Target</p>
+          <p className="text-xs text-slate-400">Target</p>
           <p className="text-sm font-semibold text-slate-300 font-mono">
             ₹{featuredGoal.target.toLocaleString("en-IN")}
           </p>
@@ -113,7 +113,7 @@ export default function PriorityGoalCard({ goals = [], totalSavings = 0 }) {
 
       {/* Footer info */}
       <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-400">
           {isReady ? (
             <span className="text-emerald-400 font-semibold flex items-center gap-1">
               <ShoppingCart className="w-3.5 h-3.5" /> Ready to Buy! 🎉

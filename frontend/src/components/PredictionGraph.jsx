@@ -81,7 +81,7 @@ export default function PredictionGraph({ goal, totalSavings = 0, dailySaving = 
         <h3 className="text-sm font-semibold text-slate-400 mb-1">
           Savings Prediction
         </h3>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-400">
           Select a goal from the table to see your projected savings growth
         </p>
       </div>
@@ -105,7 +105,7 @@ export default function PredictionGraph({ goal, totalSavings = 0, dailySaving = 
             <TrendingUp className="w-4.5 h-4.5 text-emerald-400" />
             Wallet Growth Projection
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5">
             Toward{" "}
             <span className="text-slate-300 font-medium">{goal.name}</span>
             {" — "}
@@ -226,7 +226,7 @@ export default function PredictionGraph({ goal, totalSavings = 0, dailySaving = 
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-5 mt-4 text-xs text-slate-500">
+      <div className="flex flex-wrap items-center justify-center gap-5 mt-4 text-xs text-slate-400">
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-0.5 rounded bg-emerald-400" />
           <span>Projected Growth</span>
