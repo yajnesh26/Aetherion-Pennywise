@@ -28,8 +28,8 @@ export default function PaymentModal({ contact, onClose, onPayment }) {
     // Validate phone number (10 digits)
     const cleaned = String(phoneNumber || "").replace(/\D/g, "");
     if (!/^\d{10}$/.test(cleaned)) {
-      // simple inline alert — keep UI consistent with modal style
-      alert("Please enter a valid 10-digit phone number");
+      // Reuse the modal's existing inline error UI instead of a native alert
+      setError("Please enter a valid 10-digit phone number");
       return;
     }
 
