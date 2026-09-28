@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-A5
+P1
 
 ## Next issue
 
-P1
+P2
 
 ## Current state
 
-- The last committed issue is A5 (FIXED + COMMITTED + PUSHED).
+- The last committed issue is P1 (FIXED + COMMITTED + PUSHED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
@@ -75,8 +75,9 @@ P1
 - A4 is fixed, committed and pushed.
 - A5 is fixed, committed and pushed.
 - The ACCESSIBILITY queue (A1-A5) is now complete.
-- P1 is the next issue.
-- Do NOT start P1 until the user explicitly tells you to continue.
+- P1 is fixed, committed and pushed.
+- P2 is the next issue.
+- Do NOT start P2 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -818,46 +819,180 @@ USER CONFIRMED A5 IS COMMITTED AND PUSHED.
 
 ---
 
+## P1 — Large main bundle / no route-level code splitting
+
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
+
+File changed:
+- frontend/src/App.tsx
+
+Committed as `50b0e92` "Fix(frontend) : Reduce initial bundle with route-level
+code splitting" (1 file, +28 / -16).
+
+Root cause:
+- `App.tsx` statically imported all six page components at module scope
+  (`import Login from "./pages/Login"` and so on). Because `App.tsx` is the
+  static entry graph (via `main.tsx`) and eagerly rendered all of them through a
+  single `<Routes>` block, the bundler had no dynamic boundary anywhere in the
+  app. Every page AND its entire private component tree collapsed into the one
+  main chunk — including `recharts` (~371 kB, reached via `Goals` →
+  `PredictionGraph`) and the whole payment / QR / transaction modal surface
+  reached via `Dashboard`. The build emitted Vite's explicit
+  `(!) Some chunks are larger than 500 kB ... Consider: Using dynamic import() to
+  code-split the application` warning.
+
+Fix:
+- The six page imports were converted to `React.lazy()` dynamic imports:
+  `const Login = lazy(() => import("./pages/Login"));` and likewise for
+  `Register`, `Dashboard`, `Goals`, `Chatbot` and `SetupProfile`.
+  All six pages already had default exports, so no export shape changed and no
+  `vite.config.ts` change or `manualChunks` was needed.
+- `<Routes>` is wrapped in a single `<Suspense>` boundary. It sits INSIDE the
+  existing layout div and AFTER `{!hideNavbar && <Navbar />}`, so the gradient
+  shell and the Navbar still render immediately and never flash behind the
+  fallback.
+- The `Suspense` fallback REUSES the app's existing loading UI, copied verbatim
+  from the existing Dashboard loading state (`Dashboard.jsx:195-196`):
+  `<div className="flex items-center justify-center h-[60vh]">` with
+  `<Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />`.
+  `Loader2` comes from `lucide-react`, which was already a dependency already
+  used across the app, so no new dependency and no new styling were introduced.
+- All eight route declarations are UNCHANGED: `/`, `/login`, `/register`,
+  `/dashboard`, `/setup-profile`, `/goals`, `/chat` and the `*` catch-all. No
+  path, `element`, `Navigate` target or `replace` prop was altered.
+- Incidental only: the `/setup-profile` route line had broken indentation at
+  HEAD (`  <Route ...>`); it was re-indented to match its siblings.
+- No backend, Vite, TypeScript or ESLint configuration change. No new file.
+  No new dependency.
+
+Deliberately NOT changed:
+- `Navbar` stays eagerly imported. It is the app shell rendered on every
+  non-auth route, so lazy-loading it would only delay navigation; it is not a
+  route.
+- The routing architecture was NOT rewritten. Still one `BrowserRouter` in
+  `main.tsx`, one `<Routes>`, one `AppLayout`. No loaders, no `defer`, no lazy
+  `Navbar`, no error boundary.
+- Google OAuth handling in `main.tsx` is untouched and unaffected: it reads
+  `?token=`, writes `localStorage`, strips the query with `history.replaceState`
+  and redirects BEFORE `createRoot(...).render()`, so no lazy component is
+  involved in that flow.
+- The per-page auth guards were NOT moved into the router. Each page still runs
+  its own `localStorage` / token guard in a `useEffect` and calls
+  `navigate("/login")` itself. The only observable delta is that a guard now
+  fires after its chunk resolves, so an unauthenticated deep link shows the
+  spinner briefly before redirecting. Redirect destinations and token clearing
+  are unchanged.
+- The 9 pre-existing C4 lint violations were NOT fixed.
+- `recharts` was NOT split into its own chunk. Splitting a third-party library
+  is a library-level optimisation, not route-level code splitting, and was
+  outside P1's stated scope.
+- No bundle-size targets or performance requirements were invented. Only
+  measured before/after numbers are recorded.
+- No UI, layout, styling, state-management or asset change. No accessibility
+  change. No re-doing of A1-A5. No dead-code (D1-D7) or edge-case (E1-E8) work.
+- No later issue (P2, P3, P4, D1-D7, E1-E8) was started.
+
+Build evidence (baseline captured by stashing `App.tsx` to HEAD, building, then
+restoring — measured, not estimated):
+
+| | BEFORE | AFTER |
+| --- | --- | --- |
+| Main entry chunk | 696.36 kB (gzip 209.51 kB) | 229.54 kB (gzip 73.59 kB) |
+| JS chunks emitted | 2 | 17 |
+| Route page chunks | 0 | 6 |
+| >500 kB chunk warning | present | gone |
+
+- Main entry reduced from 696.36 kB to 229.54 kB, i.e. −466.82 kB raw
+  (−67.0%).
+- gzip reduced from 209.51 kB by 135.92 kB, to 73.59 kB (−64.9%).
+- Route-specific chunks were emitted: `Login` 4.53 kB, `Register` 4.42 kB,
+  `SetupProfile` 2.84 kB, `Chatbot` 5.74 kB, `Dashboard` 31.95 kB,
+  `Goals` 371.52 kB, plus shared `api` 36.66 kB, `jsx-runtime` 8.52 kB,
+  `createLucideIcon` 1.19 kB and six tiny per-icon chunks.
+- `Goals` / `recharts` moved off the initial entry chunk: `recharts` is present
+  in the `Goals` chunk and absent from the main entry chunk (`ResponsiveContainer`
+  likewise). Page-specific UI literals ("Continue with Google",
+  "Create your account", "Add to Goals", "Scan UPI QR", "Payment Successful",
+  "Send Money", "Ask PennyWise") are all absent from the main entry chunk, which
+  now holds only the shell: React, the router and Navbar.
+- The emitted `dist/index.html` loads only the 229.54 kB entry chunk plus
+  `modulepreload` for `jsx-runtime` and `createLucideIcon`. NO page chunk is
+  preloaded — they are fetched on demand.
+- Module count was identical before and after (2381), and the CSS output was
+  byte-identical (`index-B4_6plzD.css` 67.18 kB both builds), so nothing was
+  dropped — only re-bucketed.
+
+Verification:
+- Targeted `npx eslint src/App.tsx`: clean, 0 problems.
+- `npm run build` passed (`tsc -b && vite build`, 2381 modules, clean `dist`
+  rebuild).
+- `npm run lint`: exactly the same 9 pre-existing C4 violations
+  (ContactCard.jsx, PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same
+  rules, same count as the pre-change baseline. NO NEW VIOLATIONS INTRODUCED.
+  NOT fixed.
+- All eight routes verified still declared in `App.tsx`: `/login`, `/register`,
+  `/dashboard`, `/setup-profile`, `/goals`, `/chat` (plus `/` and the `*`
+  catch-all).
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+- `git diff --stat` confirmed a single file: `frontend/src/App.tsx`, +28 / -16.
+- The P1 commit `50b0e92` touches `frontend/src/App.tsx` ONLY. It does not
+  touch `Backend/` and does not touch any of the four C4 files.
+- No test framework and no browser / E2E verification exists in this project,
+  so splitting was proven by build artifacts and content probes rather than by
+  observing network requests in a browser.
+
+LIMITATIONS:
+- No browser / E2E verification exists in this project (no test framework, no
+  test files). Route-level splitting was verified by build output, chunk
+  inspection and string probes only. Dev-mode on-demand fetching was not
+  manually exercised.
+- The `Goals` chunk remains large at ~371.52 kB because it statically imports
+  `recharts` through `PredictionGraph`. It is now off the critical path, but it
+  was deliberately NOT split further.
+- No error boundary was added. If a page chunk 404s (stale hashed asset after a
+  deploy without a cache purge) React will throw. This matches the pre-change
+  behaviour — no error boundary existed before either — and adding one would be
+  scope creep.
+- No bundle-size targets were set, so this issue has no numeric acceptance
+  criterion beyond the measured before/after reduction recorded above.
+
+USER CONFIRMED P1 IS COMMITTED AND PUSHED.
+
+---
+
 # NEXT ISSUE
 
-## P1 — Large main bundle / no route-level code splitting
+## P2 — Backend-only packages incorrectly listed as frontend dependencies
 
 STATUS: NEXT
 
 Original audit finding:
 
-Large main bundle / no route-level code splitting.
-
-Current behavior:
-- The whole application ships as one large main bundle instead of being split
-  per route.
+Backend-only packages incorrectly listed as frontend dependencies.
 
 Original audit scope:
-- See the `PERFORMANCE / QUALITY` entry for P1 and the recorded audit locations
+- See the `PERFORMANCE / QUALITY` entry for P2 and the recorded audit locations
   for this issue.
-
-Expected direction:
-- Introduce route-level code splitting so each page is loaded on demand.
 
 IMPORTANT:
 Before changing anything:
 
 1. Inspect the current source and compare it with this description — do not
    assume the audit state is unchanged.
-2. Preserve the existing application behaviour, routing and layout. This is a
-   bundling concern only — no visible UI change is expected.
+2. Preserve the existing application behaviour. No visible UI change is
+   expected.
 3. Do NOT invent requirements. Use the tooling and patterns already present in
    the project.
 
 Do NOT:
-- modify backend files
-- fix another audit issue (P2, P3, P4, D1-D7, E1-E8, etc.)
+- modify backend files or anything under `Backend/`
+- fix another audit issue (P3, P4, D1-D7, E1-E8, etc.)
 - refactor unrelated code
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
 - modify dead-code items D1-D7
 
-Fix ONLY P1. Do NOT start any later issue (P2, P3, P4, D1-D7, E1-E8).
+Fix ONLY P2. Do NOT start any later issue (P3, P4, D1-D7, E1-E8).
 
 ---
 
@@ -987,13 +1122,13 @@ STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 Large main bundle / no route-level code splitting.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 ## P2
 
 Backend-only packages incorrectly listed as frontend dependencies.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## P3
 
