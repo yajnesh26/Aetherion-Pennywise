@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-P1
+P2
 
 ## Next issue
 
-P2
+P3
 
 ## Current state
 
-- The last committed issue is P1 (FIXED + COMMITTED + PUSHED).
+- The last committed issue is P2 (FIXED + COMMITTED + PUSHED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
@@ -76,8 +76,9 @@ P2
 - A5 is fixed, committed and pushed.
 - The ACCESSIBILITY queue (A1-A5) is now complete.
 - P1 is fixed, committed and pushed.
-- P2 is the next issue.
-- Do NOT start P2 until the user explicitly tells you to continue.
+- P2 is fixed, committed and pushed.
+- P3 is the next issue.
+- Do NOT start P3 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -960,18 +961,163 @@ USER CONFIRMED P1 IS COMMITTED AND PUSHED.
 
 ---
 
-# NEXT ISSUE
+## P2 — Unused server dependencies in frontend package
 
-## P2 — Backend-only packages incorrectly listed as frontend dependencies
-
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
 
 Original audit finding:
 
 Backend-only packages incorrectly listed as frontend dependencies.
 
+Files changed:
+- frontend/package.json
+- frontend/package-lock.json
+
+Committed as `0c044b3` "Fix(frontend) : Remove unused server dependencies"
+(2 files, +9 / -1061).
+
+Root cause:
+- `frontend/package.json` declared three Node/Express SERVER packages in the
+  browser app's `dependencies`: `cheerio@^1.2.0`, `cors@^2.8.6` and
+  `express@^5.2.1`. All three are server-side (`express` HTTP framework, `cors`
+  Express middleware, `cheerio` server-side HTML scraping) and are declared in,
+  and used by, `Backend/package.json`.
+- A repo-wide sweep of `frontend/` for `express|cors|cheerio` found matches in
+  exactly TWO files — `frontend/package.json` and `frontend/package-lock.json` —
+  and ZERO in `src/`, `vite.config.ts`, `eslint.config.js`, `index.html` or any
+  tsconfig. They were therefore pure dead weight in the frontend manifest,
+  inflating every frontend install with 79 extra packages and misleadingly
+  advertising the frontend as an Express application.
+- `axios` was deliberately KEPT. It appears in both manifests but is genuinely
+  used by the frontend (`src/services/api.js`).
+
+Fix:
+- Removed exactly three entries from `frontend/package.json` `dependencies`;
+  nothing else. `dependencies` is now `@tailwindcss/vite`,
+  `@yudiel/react-qr-scanner`, `axios`, `lucide-react`, `react`, `react-dom`,
+  `react-router-dom`, `recharts`, `tailwindcss`.
+- `frontend/package-lock.json` was regenerated with
+  `npm install --package-lock-only` so it stays in sync with `package.json`.
+  Editing `package.json` alone would have desynced the lockfile and made
+  `npm ci` fail with "package.json and package-lock.json are not in sync", so
+  the lockfile sync is part of the fix, not scope creep.
+- Nothing was MOVED to `devDependencies`. These packages belong nowhere in the
+  frontend manifest, because the backend declares its own copies.
+- No source file, config file, or `Backend/` file was touched.
+
+Deliberately NOT changed:
+- `Backend/package.json` still declares its own `express@^4.21.2`,
+  `cors@^2.8.5` and `cheerio@^1.2.0`. This was inspected read-only to identify
+  which packages are backend-only and was NOT modified. Note the backend
+  intentionally pins different major/range values than the frontend had
+  (`express@^4` vs the frontend's `^5.2.1`, `cors@^2.8.5` vs `^2.8.6`); that
+  divergence is the backend's business and was left alone.
+- `@tailwindcss/vite` and `tailwindcss` remain in `dependencies`. They are
+  build-time-only and would conventionally belong in `devDependencies`, but they
+  are NOT backend-only packages, so this is a different concern from P2's
+  finding. Recorded here as an observation only — do NOT treat it as a new
+  issue and do NOT fold it into another issue.
+- A stray `frontend/frontend/.lint-test/comp.jsx` exists (leftover from the C4
+  lint-coverage work). It is unrelated to dependencies and was left untouched.
+- The 9 pre-existing C4 lint violations were NOT fixed.
+- No source file, layout, styling, behaviour or accessibility change. No new
+  dependency added and NO dependency version changed anywhere.
+- No later issue (P3, P4, D1-D7, E1-E8) was started.
+
+Lockfile impact (verified mechanically by diffing every entry before/after):
+- **0** retained packages had a version change.
+- **0** entries added.
+- **82** entries removed — exactly `cheerio`, `cors`, `express` and their
+  exclusive transitive trees: `accepts`, `body-parser`, `boolbase`, `bytes`,
+  `call-bound`, `cheerio-select`, `content-disposition`, `content-type`,
+  `cookie-signature`, `css-select`, `css-what`, `dom-serializer`,
+  `domelementtype`, `domhandler`, `domutils`, `ee-first`, `encodeurl`,
+  `encoding-sniffer`, `entities`, `escape-html`, `etag`, `finalhandler`,
+  `forwarded`, `fresh`, `htmlparser2`, `http-errors`, `iconv-lite`, `inherits`,
+  `ipaddr.js`, `is-promise`, `media-typer`, `merge-descriptors`,
+  `negotiator`, `nth-check`, `object-assign`, `object-inspect`,
+  `on-finished`, `once`, `parse5`, `parse5-htmlparser2-tree-adapter`,
+  `parse5-parser-stream`, `parseurl`, `path-to-regexp`, `proxy-addr`, `qs`,
+  `range-parser`, `raw-body`, `router`, `safer-buffer`, `send`,
+  `serve-static`, `setprototypeof`, `side-channel`, `side-channel-list`,
+  `side-channel-map`, `side-channel-weakmap`, `statuses`, `toidentifier`,
+  `type-is`, `undici`, `unpipe`, `vary`, `whatwg-encoding`, `whatwg-mimetype`,
+  `wrappy`.
+
+Verification:
+- Repo-wide sweep for `express|cors|cheerio` across `frontend/`: matches only in
+  `package.json` and `package-lock.json`; zero real usage in source or config.
+- `package.json` and `package-lock.json` are SYNCHRONIZED (root dependency lists
+  compared programmatically — identical, order preserved).
+- `npm ci --dry-run` succeeded with "up to date", closing the desync failure
+  mode.
+- A real reinstall from the new lockfile completed
+  (`added 215 packages, removed 12, changed 54`). `node_modules` afterwards
+  contains NO `express`, `cors` or `cheerio`, while every genuine frontend
+  dependency is still present.
+- `npm ls --depth=0` reported a clean tree of 21 packages with no missing or
+  invalid dependencies and no server packages.
+- `npm run build` passed (`tsc -b && vite build`, 2381 modules — the same module
+  count as before the change).
+- Bundle output remains BYTE-IDENTICAL to the P1 baseline: the same hashed
+  filenames and sizes were emitted (`index-BLTMO660.js` 229.54 kB / gzip
+  73.59 kB, `Goals-djeLjkya.js` 371.52 kB, `Dashboard-DWb27MDv.js` 31.95 kB,
+  etc.). This confirms zero runtime or bundle impact — these packages were
+  never bundled in the first place. The benefit is a correct manifest and a
+  79-package-smaller frontend install, NOT a smaller bundle.
+- `npm run lint`: exactly the same 9 pre-existing C4 violations
+  (ContactCard.jsx, PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same
+  rules, same count as the pre-change baseline. NO NEW VIOLATIONS INTRODUCED.
+  NOT fixed.
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+- The P2 commit `0c044b3` touches ONLY `frontend/package.json` and
+  `frontend/package-lock.json`. It does not touch `Backend/`, `frontend/src/`,
+  or any frontend config file (`vite.config.ts`, `eslint.config.js`,
+  `index.html`, `tsconfig*.json`).
+
+LIMITATIONS:
+- `npm ci` initially FAILED with `EPERM` on
+  `node_modules/@rolldown/binding-win32-x64-msvc/rolldown-binding.win32-x64-msvc.node`.
+  Cause: a `vite preview --port 4173` server that was already running held that
+  native binary open. The failed `npm ci` had already begun deleting
+  `node_modules`, leaving it partial (`react` and `tailwindcss` missing). It was
+  restored with `npm install`, which succeeded. The final state was verified
+  correct afterwards (193 package directories, clean `npm ls`, build and lint
+  both green). The user's running preview server was NOT killed.
+- ONE leftover npm temp staging directory remains:
+  `node_modules/@tailwindcss/.node-AdpGeKIR`. It could not be deleted for the
+  same reason — it holds a `lightningcss.win32-x64-msvc.node` that the running
+  preview server has open. It is INSIDE gitignored `node_modules`, so it does
+  not affect the repository, the commit or the build, and it will disappear the
+  next time `node_modules` is reinstalled after the preview server is stopped.
+- The build emitted a one-off informational `[PLUGIN_TIMINGS]` notice and took
+  34.97 s instead of ~0.4 s. This was a cold-cache / reinstall artifact of the
+  dependency tree being rebuilt on disk, NOT a regression — the emitted chunk
+  hashes and sizes were identical.
+- No test framework and no browser / E2E verification exists in this project,
+  so runtime behaviour was verified by build output and content comparison
+  rather than in a browser. No dev server was started and the user's running
+  preview server was left undisturbed.
+- The removal changes nothing that ships to users. If a reviewer expects a
+  bundle-size win from this issue, there is none — the packages were already
+  unbundled dead entries in the manifest.
+
+USER CONFIRMED P2 IS COMMITTED AND PUSHED.
+
+---
+
+# NEXT ISSUE
+
+## P3 — Dashboard profile-check effect runs on every render
+
+STATUS: NEXT
+
+Original audit finding:
+
+Dashboard profile-check effect runs on every render.
+
 Original audit scope:
-- See the `PERFORMANCE / QUALITY` entry for P2 and the recorded audit locations
+- See the `PERFORMANCE / QUALITY` entry for P3 and the recorded audit locations
   for this issue.
 
 IMPORTANT:
@@ -986,13 +1132,13 @@ Before changing anything:
 
 Do NOT:
 - modify backend files or anything under `Backend/`
-- fix another audit issue (P3, P4, D1-D7, E1-E8, etc.)
+- fix another audit issue (P4, D1-D7, E1-E8, etc.)
 - refactor unrelated code
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
 - modify dead-code items D1-D7
 
-Fix ONLY P2. Do NOT start any later issue (P3, P4, D1-D7, E1-E8).
+Fix ONLY P3. Do NOT start any later issue (P4, D1-D7, E1-E8).
 
 ---
 
@@ -1128,13 +1274,13 @@ STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 Backend-only packages incorrectly listed as frontend dependencies.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 ## P3
 
 Dashboard profile-check effect runs on every render.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## P4
 
