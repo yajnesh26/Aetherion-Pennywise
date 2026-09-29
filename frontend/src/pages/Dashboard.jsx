@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useId, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ChevronRight, Sparkles, Loader2, AlertCircle, X } from "lucide-react";
 import PaymentActions from "../components/PaymentActions";
 import ContactCard from "../components/ContactCard";
@@ -244,12 +244,12 @@ export default function Dashboard() {
               Every transaction rounds up to the nearest ₹10 — small change, big goals!
             </p>
           </div>
-          <a
-            href="/goals"
+          <Link
+            to="/goals"
             className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 whitespace-nowrap transition-colors"
           >
             View Goals →
-          </a>
+          </Link>
         </div>
       </section>
 
