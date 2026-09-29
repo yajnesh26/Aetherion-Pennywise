@@ -54,13 +54,17 @@ export default function Dashboard() {
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const user = JSON.parse(localStorage.getItem("pennywise_user") || "{}");
+  // Stable primitives for the profile check: `user` is a fresh object on every
+  // render, so depending on it would re-run the effect on every render.
+  const userPhoneNumber = user?.phoneNumber;
+  const userAccountNumber = user?.accountNumber;
 
   // If profile incomplete, force setup before accessing dashboard
   useEffect(() => {
-    if (!user || !user.phoneNumber || !user.accountNumber) {
+    if (!userPhoneNumber || !userAccountNumber) {
       navigate("/setup-profile");
     }
-  }, [navigate, user]);
+  }, [navigate, userPhoneNumber, userAccountNumber]);
 
   // ── Fetch goals + wallet from backend ────────────────────
   const fetchData = useCallback(async () => {
