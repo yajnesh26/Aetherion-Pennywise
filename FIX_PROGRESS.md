@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-P3
+P4
 
 ## Next issue
 
-P4
+D1
 
 ## Current state
 
-- The last committed issue is P3 (FIXED + COMMITTED + PUSHED).
+- The last committed issue is P4 (FIXED + COMMITTED + PUSHED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
@@ -78,8 +78,10 @@ P4
 - P1 is fixed, committed and pushed.
 - P2 is fixed, committed and pushed.
 - P3 is fixed, committed and pushed.
-- P4 is the next issue.
-- Do NOT start P4 until the user explicitly tells you to continue.
+- P4 is fixed, committed and pushed.
+- The PERFORMANCE / QUALITY queue (P1-P4) is now complete.
+- D1 is the next issue.
+- Do NOT start D1 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -1199,19 +1201,132 @@ USER CONFIRMED P3 IS COMMITTED AND PUSHED.
 
 ---
 
-# NEXT ISSUE
-
 ## P4 — Raw `<a href>` causes full-page reload in SPA
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
 
 Original audit finding:
 
 Raw `<a href>` causes full-page reload in SPA.
 
+Files changed:
+- frontend/src/pages/Dashboard.jsx
+
+Committed as `e854f90` "Fix(frontend) : Use React Router for internal goals link"
+(1 file, +4 / -4).
+
+Root cause:
+- The app is a React Router SPA (`BrowserRouter` in `main.tsx`, routes in
+  `App.tsx`, route-level code splitting added by P1). Any in-app link written
+  as a raw `<a href="/some-route">` bypasses the router entirely: the browser
+  treats it as a document navigation, tears down the React tree, re-downloads
+  and re-executes the entry chunk, and re-runs every page-level effect
+  (including the P3 profile check and the Dashboard `fetchData`).
+- The established in-app pattern in this codebase is React Router's `Link`,
+  already used in `Navbar.jsx`, `Login.jsx`, `Register.jsx` and
+  `PriorityGoalCard.jsx`. The audit finding was that one live link did not
+  follow it.
+- A `git grep` for `<a` across the frontend sources (`.jsx`, `.tsx`, `.js`,
+  `.ts`, `.html`) returned exactly FOUR occurrences, all in live rendered code.
+  Only ONE of them was internal SPA navigation:
+
+  | Location | href target | Classification |
+  | --- | --- | --- |
+  | `Dashboard.jsx:247` | `/goals` (internal SPA route) | Internal SPA navigation — CHANGED |
+  | `GoalRow.jsx:64` | `goal.url` (external, `target="_blank"`) | Intentionally a normal anchor |
+  | `GoalsTable.jsx:149` | `goal.url` (external, `target="_blank"`) | Intentionally a normal anchor |
+  | `AddGoalFromLink.jsx:214` | `product.url` (external, `target="_blank"`) | Intentionally a normal anchor |
+
+Fix:
+- `Dashboard.jsx:247` — the "View Goals →" link in the Savings Wallet banner
+  was a raw `<a href="/goals">` and is now React Router's `<Link to="/goals">`,
+  matching the existing `Link to="/goals"` pattern already used twice in
+  `PriorityGoalCard.jsx` for the same destination.
+- The import on line 2 was widened from `{ useNavigate }` to
+  `{ Link, useNavigate }`. `useNavigate` is still used elsewhere in the file and
+  was kept.
+- The `className` was left byte-identical
+  (`text-xs font-semibold text-emerald-400 hover:text-emerald-300 whitespace-nowrap transition-colors`),
+  so the visual appearance is unchanged. `Link` renders an `<a>` with an `href`,
+  so the rendered element, styling and "View Goals →" text are identical — only
+  the click is now handled by the router.
+- The destination `/goals` is unchanged.
+- No new dependency: `Link` comes from `react-router-dom`, which was already a
+  dependency.
+
+Deliberately NOT changed:
+- The three external product-URL anchors (`GoalRow.jsx`, `GoalsTable.jsx`,
+  `AddGoalFromLink.jsx`) were deliberately left as normal anchors. They point at
+  third-party product pages, carry `target="_blank" rel="noopener noreferrer"`
+  and an `ExternalLink` icon, and leave the application entirely, so routing
+  them through `Link` would avoid no reload and could break the new-tab and
+  referrer-security behavior. The `onClick={(e) => e.stopPropagation()}` handlers
+  on the first two (which stop the parent row's selection click) were preserved
+  untouched.
+- `main.tsx:11-13` (`history.replaceState` + `location.replace("/dashboard")`)
+  and `Login.jsx:63` (`window.location.href` to the backend `/auth/google`) were
+  inspected read-only and left alone. Both are correct: the OAuth handling must
+  run BEFORE React mounts (C1), and the Google URL is a cross-origin redirect
+  that React Router must not intercept.
+- There are no `mailto:`, `tel:`, `download` or hash/anchor (`#…`) links
+  anywhere in the frontend, and no `<a>` in `index.html`, `App.tsx`,
+  `Navbar.jsx`, `Goals.jsx`, `Chatbot.jsx` or `SetupProfile.jsx`.
+- The three external anchors were NOT converted to buttons or wrapped in click
+  handlers. No new routing approach, no `NavLink` conversion of existing
+  `Link`s, and no Navbar markup change.
+- The 9 pre-existing C4 lint violations were NOT fixed.
+- No source file, layout, styling or behaviour was refactored beyond the above.
+- No backend changes.
+- `FIX_PROGRESS.md` was NOT modified during the P4 implementation.
+- No later issue (D1-D7, E1-E8) was started.
+
+Verification:
+- Targeted `npx eslint src/pages/Dashboard.jsx`: clean, 0 problems.
+- `npm run build` passed (`tsc -b && vite build`, 2381 modules — the same module
+  count as the P3 baseline). Output sizes match the baseline: entry 229.54 kB /
+  gzip 73.59 kB, CSS 67.18 kB, `Goals` 371.52 kB, `Dashboard` 31.96 kB. Hashes
+  change as expected from the source edit. NO chunk-size warning.
+- `npm run lint`: exactly the same 9 pre-existing C4 violations
+  (ContactCard.jsx, PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same
+  rules, same count as the pre-change baseline. NO NEW VIOLATIONS INTRODUCED.
+  NOT fixed.
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+- `git status --porcelain` showed only `M frontend/src/pages/Dashboard.jsx`;
+  `git diff --stat` confirmed 1 file, +3 / -3 at commit time.
+- The P4 commit `e854f90` touches ONLY `frontend/src/pages/Dashboard.jsx`. It
+  does not touch `Backend/` and does not touch any of the four C4 files.
+- Internal navigation for the P4 target now uses the router: clicking "View
+  Goals →" no longer issues a document request, so no unnecessary full-page
+  reload remains for the only internal raw anchor in the app.
+
+LIMITATIONS:
+- No test framework and no browser / E2E verification exists in this project
+  (no test framework, no test files). The absence of a full-page reload was
+  established by source review and the build output, NOT by observing network
+  requests in a browser.
+- Correct SPA fallback behavior on a static host (serving `index.html` for deep
+  routes such as `/goals`) is a deployment concern and is unchanged from before.
+- The three external product anchors remain anchors by design. If a future goal
+  or product URL were ever an internal route, that classification would need to
+  be revisited, but these are third-party product pages.
+
+USER CONFIRMED P4 IS COMMITTED AND PUSHED.
+
+---
+
+# NEXT ISSUE
+
+## D1 — `GoalCard.jsx` is unused
+
+STATUS: NEXT
+
+Original audit finding:
+
+`GoalCard.jsx` is unused.
+
 Original audit scope:
-- See the `PERFORMANCE / QUALITY` entry for P4 and the recorded audit locations
-  for this issue.
+- See the `DEAD CODE` entry for D1 and the recorded audit locations for this
+  issue.
 
 IMPORTANT:
 Before changing anything:
@@ -1225,13 +1340,13 @@ Before changing anything:
 
 Do NOT:
 - modify backend files or anything under `Backend/`
-- fix another audit issue (D1-D7, E1-E8, etc.)
+- fix another audit issue (D2-D7, E1-E8, etc.)
 - refactor unrelated code
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
-- modify dead-code items D1-D7
+- modify dead-code items D2-D7
 
-Fix ONLY P4. Do NOT start any later issue (D1-D7, E1-E8).
+Fix ONLY D1. Do NOT start any later issue (D2-D7, E1-E8).
 
 ---
 
@@ -1379,7 +1494,7 @@ STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 Raw `<a href>` causes full-page reload in SPA.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 ---
 
@@ -1389,7 +1504,7 @@ STATUS: NEXT
 
 `GoalCard.jsx` is unused.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## D2
 
