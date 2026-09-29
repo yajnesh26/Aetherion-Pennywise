@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-P2
+P3
 
 ## Next issue
 
-P3
+P4
 
 ## Current state
 
-- The last committed issue is P2 (FIXED + COMMITTED + PUSHED).
+- The last committed issue is P3 (FIXED + COMMITTED + PUSHED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
@@ -77,8 +77,9 @@ P3
 - The ACCESSIBILITY queue (A1-A5) is now complete.
 - P1 is fixed, committed and pushed.
 - P2 is fixed, committed and pushed.
-- P3 is the next issue.
-- Do NOT start P3 until the user explicitly tells you to continue.
+- P3 is fixed, committed and pushed.
+- P4 is the next issue.
+- Do NOT start P4 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -1106,18 +1107,110 @@ USER CONFIRMED P2 IS COMMITTED AND PUSHED.
 
 ---
 
-# NEXT ISSUE
-
 ## P3 — Dashboard profile-check effect runs on every render
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
 
 Original audit finding:
 
 Dashboard profile-check effect runs on every render.
 
+Files changed:
+- frontend/src/pages/Dashboard.jsx
+
+Committed as `b183b49` "Fix(frontend) : Prevent dashboard profile-check effect
+reruns" (1 file, +6 / -2).
+
+Root cause:
+- `Dashboard.jsx` parsed the stored profile on every render:
+  `const user = JSON.parse(localStorage.getItem("pennywise_user") || "{}");`
+  so `user` was a brand-new object identity on every render.
+- The profile-check effect that redirects to `/setup-profile` listed that
+  recreated object in its dependency array (`[navigate, user]`), so React saw a
+  changed dependency on every render and re-ran the effect even when the actual
+  profile data had not changed.
+- Every unrelated Dashboard state change (`goals`, `totalSavings`, `loading`,
+  `txRefreshKey`, `paymentModal`, `roundUpPopup`, `scannerOpen`, `scanError`,
+  `allContactsOpen`, focus-trap internals) therefore re-executed the profile
+  check and re-issued the redirect decision.
+
+Fix:
+- Two stable primitive values were read from the parsed user:
+  `const userPhoneNumber = user?.phoneNumber;` and
+  `const userAccountNumber = user?.accountNumber;`
+- The effect now depends on `[navigate, userPhoneNumber, userAccountNumber]`
+  instead of the recreated `user` object, and its guard reads those primitives.
+- The effect now re-runs only when the phone number or account number actually
+  changes value, never because of an unrelated re-render.
+- The redundant `!user` check was dropped: with the existing `|| "{}"` fallback
+  `user` is always a truthy object, and `!userPhoneNumber` covers the same cases
+  (a missing key or a null store both yield `undefined`).
+- The `user` variable itself was left in place and unchanged, because the
+  greeting still reads `user.name?.split(" ")[0]`.
+- No visible UI change. No route, redirect target or token handling changed.
+
+Deliberately NOT changed:
+- `pennywise_user` is still parsed once per render, because the greeting reads
+  it and the parse is cheap. Only the effect's DEPENDENCY was made stable; the
+  parse itself was not moved into a `useMemo` or a module-level read.
+- The redirect target `/setup-profile` and the completeness rule
+  (phone number AND account number) are unchanged, so the C2 required-field
+  behavior is preserved.
+- The separate auth guard and 401 handling in `fetchData` (token check,
+  `navigate("/login")`, `localStorage.removeItem("token")`) were NOT touched.
+- Google OAuth handling in `main.tsx` and `Login.jsx` was NOT touched.
+- No other `useEffect` in Dashboard was modified. The `fetchData` effect was
+  already correctly memoized with `useCallback`.
+- The 9 pre-existing C4 lint violations were NOT fixed.
+- No source file, layout, styling or behaviour was refactored beyond the above.
+- No backend changes.
+- No later issue (P4, D1-D7, E1-E8) was started.
+
+Verification:
+- Targeted `npx eslint src/pages/Dashboard.jsx`: clean, 0 problems.
+- `npm run build` passed (`tsc -b && vite build`). Bundle output matches the P2
+  baseline (entry `index-*.js` 229.54 kB / gzip 73.59 kB, CSS 67.18 kB,
+  `Goals` 371.52 kB, `Dashboard` 31.96 kB). The `[PLUGIN_TIMINGS]` notice is the
+  same informational notice recorded in P2, not a regression.
+- `npm run lint`: exactly the same 9 pre-existing C4 violations
+  (ContactCard.jsx, PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same
+  rules, same count as the pre-change baseline. NO NEW VIOLATIONS INTRODUCED.
+  NOT fixed.
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+- The P3 commit `b183b49` touches ONLY `frontend/src/pages/Dashboard.jsx`. It
+  does not touch `Backend/` and does not touch any of the four C4 files.
+- Flow behavior verified by source review: a complete profile stays on the
+  Dashboard, a missing phone or account number still redirects to
+  `/setup-profile`, an absent token or absent `pennywise_user` behaves exactly as
+  before, and logout / 401 is unaffected.
+
+LIMITATIONS:
+- No test framework and no browser / E2E verification exists in this project
+  (no test framework, no test files). The effect no longer re-running on
+  unrelated re-renders is established by dependency-identity reasoning and the
+  source, not by observing effect executions in a browser. No temporary
+  instrumentation was added.
+- `user` is still re-parsed on every render (it feeds the greeting). The fix
+  targets the dependency only.
+- Mid-session changes to `pennywise_user` are still not observed reactively, as
+  they were not before; the page does not subscribe to storage events.
+
+USER CONFIRMED P3 IS COMMITTED AND PUSHED.
+
+---
+
+# NEXT ISSUE
+
+## P4 — Raw `<a href>` causes full-page reload in SPA
+
+STATUS: NEXT
+
+Original audit finding:
+
+Raw `<a href>` causes full-page reload in SPA.
+
 Original audit scope:
-- See the `PERFORMANCE / QUALITY` entry for P3 and the recorded audit locations
+- See the `PERFORMANCE / QUALITY` entry for P4 and the recorded audit locations
   for this issue.
 
 IMPORTANT:
@@ -1132,13 +1225,13 @@ Before changing anything:
 
 Do NOT:
 - modify backend files or anything under `Backend/`
-- fix another audit issue (P4, D1-D7, E1-E8, etc.)
+- fix another audit issue (D1-D7, E1-E8, etc.)
 - refactor unrelated code
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
 - modify dead-code items D1-D7
 
-Fix ONLY P3. Do NOT start any later issue (P4, D1-D7, E1-E8).
+Fix ONLY P4. Do NOT start any later issue (D1-D7, E1-E8).
 
 ---
 
@@ -1280,13 +1373,13 @@ STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 Dashboard profile-check effect runs on every render.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 ## P4
 
 Raw `<a href>` causes full-page reload in SPA.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ---
 
