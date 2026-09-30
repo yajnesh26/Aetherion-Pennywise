@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-D1
+D2
 
 ## Next issue
 
-D2
+D3
 
 ## Current state
 
-- The last committed issue is D1 (FIXED + COMMITTED + PUSHED + USER CONFIRMED).
+- The last committed issue is D2 (FIXED + COMMITTED + PUSHED + USER CONFIRMED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
@@ -81,8 +81,9 @@ D2
 - P4 is fixed, committed and pushed.
 - The PERFORMANCE / QUALITY queue (P1-P4) is now complete.
 - D1 is fixed, committed and pushed.
-- D2 is the next issue.
-- Do NOT start D2 until the user explicitly tells you to continue.
+- D2 is fixed, committed and pushed.
+- D3 is the next issue.
+- Do NOT start D3 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -1380,18 +1381,118 @@ USER CONFIRMED D1 IS COMMITTED AND PUSHED.
 
 ---
 
-# NEXT ISSUE
-
 ## D2 — `ProgressBar.jsx` only used by dead GoalCard
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
 
 Original audit finding:
 
 `ProgressBar.jsx` only used by dead GoalCard.
 
+File changed:
+- frontend/src/components/ProgressBar.jsx (DELETED)
+
+Committed as `3746e11` "Fix(frontend) : Remove unused ProgressBar component"
+(1 file, -29 / +0 — the file was deleted outright).
+
+Root cause:
+- `frontend/src/components/ProgressBar.jsx` was authored in the initial commit
+  (`1b6d8eb Basic frontend Structure`) alongside `GoalCard.jsx`, which imported
+  it (`import ProgressBar from "./ProgressBar";`). The two were a dead-code pair:
+  `GoalCard` was itself unreferenced, so `ProgressBar`'s only consumer was
+  already dead code.
+- D1 (`9dd57ec`) deleted `GoalCard.jsx`, which removed the last reference and
+  left `ProgressBar` orphaned. It therefore had ZERO live consumers at the time
+  D2 was picked up, and D2's job was to confirm that by inspection before
+  deleting anything — not to trust the audit text.
+- Because the component was unreachable, A5 deliberately left its one failing
+  `text-slate-500` contrast token (recorded as "`ProgressBar.jsx` (1)") in place
+  unrendered.
+
+Reachability evidence gathered BEFORE deleting (per the D2 NEXT ISSUE
+requirement not to assume the audit state is unchanged):
+
+| # | Search | Result |
+| --- | --- | --- |
+| 1 | Case-insensitive `git grep -i "progressbar"` over all tracked files | 7 hits in 3 files — the component's own definition, `FIX_PROGRESS.md`, and `frontend/FRONTEND_README.md`. Zero code references. |
+| 2 | Full import manifest — every `import` line across all 27 `frontend/src` files | Zero imports of `ProgressBar`. |
+| 3 | Alias-resolution viability | `vite.config.ts` has no `resolve.alias`; `tsconfig.app.json` has no `compilerOptions.paths`. No `@/components/ProgressBar` form could resolve. |
+| 4 | Barrel / re-export hubs | The only `index.*` file in `frontend/src` is `index.css` — there is no JS/TS barrel, so no re-export path exists. |
+| 5 | `import(`, `lazy(`, `require(`, `createElement`, `Suspense` | Only the 6 route-level page lazies in `App.tsx` and `import("@yudiel/react-qr-scanner")` in `QRScanner.jsx`. No dynamic or lazy reference to `ProgressBar`. |
+| 6 | `git log -S "ProgressBar" --all -- frontend/src` | Exactly 2 commits ever touched the name: `1b6d8eb` (added both files) and `9dd57ec` (D1, dropped the only import). |
+| 7 | Do live components need a progress bar? | Yes, but they implement one inline: `GoalRow.jsx`, `GoalsTable.jsx` and `PriorityGoalCard.jsx` each compute and render their own. None import `ProgressBar`. |
+
+Fix:
+- `frontend/src/components/ProgressBar.jsx` was DELETED. Nothing else was changed.
+- No live import needed removing, because no live import existed.
+
+Deliberately NOT changed:
+- `SavingsCard.jsx` (D3) was inspected read-only and imports only `lucide-react`
+  icons — it does not reference `ProgressBar`, so D3 is unaffected. It was NOT
+  modified.
+- The TransactionList summary bar (D4), the default API export (D5),
+  `react.svg` (D6) and the unused React import in QRScanner (D7) were NOT
+  touched. Each is its own issue.
+- The stale `ProgressBar.jsx` entry in the `frontend/FRONTEND_README.md`
+  component tree was intentionally LEFT UNCHANGED. Documentation cleanup was
+  explicitly out of scope for D2, so that file tree is now one entry out of
+  date. Recorded here as an observation only — do NOT treat it as a new issue
+  and do NOT fold it into another issue.
+- No replacement component was introduced for it. Live components already render
+  their own inline progress bars and were left alone.
+- No consumer was refactored, because there were no consumers to refactor.
+- No source file, layout, styling or behaviour was refactored beyond the deletion.
+- No backend changes.
+- The 9 pre-existing C4 lint violations were NOT fixed.
+- `FIX_PROGRESS.md` was NOT modified during the D2 implementation.
+
+Verification:
+- Repo-wide post-delete sweep for `progressbar` confirmed NO live references
+  remain; the only surviving matches are documentation text.
+- Targeted `npx eslint src/components src/pages src/App.tsx`: 9 problems, all
+  pre-existing C4 (`User`, `avatarColors`, 3× unused `e`, 2× `no-empty`,
+  `ArrowUp`, `walletBalance`). NO NEW VIOLATIONS INTRODUCED.
+- `npm run build` passed (`tsc -b && vite build`). Bundle output is byte-identical
+  to the D1 baseline (`index-D46BqQ_2.js` 229.54 kB / gzip 73.59 kB,
+  `index-CexWdzcL.css` 66.83 kB, `Goals-CmLepaNZ.js` 371.52 kB,
+  `Dashboard-wLcJ0llC.js` 31.96 kB), which is the proof that it was never
+  bundled. NO chunk-size warning.
+- `npm run lint`: exactly the same 9 pre-existing C4 violations
+  (ContactCard.jsx, PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same
+  rules, same count as the pre-change baseline. NOT fixed.
+- `git diff --stat` confirmed a single deleted file (-29 lines) with no other
+  file modified.
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+- The D2 commit `3746e11` touches ONLY the deleted
+  `frontend/src/components/ProgressBar.jsx`. It does not touch `Backend/` and
+  does not touch any of the four C4 files.
+- Working tree is clean after the push.
+
+LIMITATIONS:
+- No test framework and no browser / E2E verification exists in this project
+  (no test framework, no test files). The component's unreferenced status was
+  established by repo-wide text search, git history and a passing build, not by
+  observing runtime behaviour.
+- The deletion removes the one `text-slate-500` occurrence A5 had flagged in this
+  dead file. That resolves as a byproduct of D2, not as a separate
+  accessibility fix.
+
+USER CONFIRMED D2 IS COMMITTED AND PUSHED.
+
+---
+
+# NEXT ISSUE
+
+## D3 — `SavingsCard.jsx` is unused
+
+STATUS: NEXT
+
+Original audit finding:
+
+`SavingsCard.jsx` is unused.
+
 Original audit scope:
-- See the `DEAD CODE` entry for D2 and the recorded audit locations for this
+- See the `DEAD CODE` entry for D3 and the recorded audit locations for this
   issue.
 
 IMPORTANT:
@@ -1406,13 +1507,13 @@ Before changing anything:
 
 Do NOT:
 - modify backend files or anything under `Backend/`
-- fix another audit issue (D3-D7, E1-E8, etc.)
+- fix another audit issue (D4-D7, E1-E8, etc.)
 - refactor unrelated code
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
-- modify dead-code items D3-D7
+- modify dead-code items D4-D7
 
-Fix ONLY D2. Do NOT start any later issue (D3-D7, E1-E8).
+Fix ONLY D3. Do NOT start any later issue (D4-D7, E1-E8).
 
 ---
 
@@ -1576,13 +1677,13 @@ STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 `ProgressBar.jsx` only used by dead GoalCard.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 ## D3
 
 `SavingsCard.jsx` is unused.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## D4
 
