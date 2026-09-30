@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-P4
+D1
 
 ## Next issue
 
-D1
+D2
 
 ## Current state
 
-- The last committed issue is P4 (FIXED + COMMITTED + PUSHED).
+- The last committed issue is D1 (FIXED + COMMITTED + PUSHED + USER CONFIRMED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
@@ -80,8 +80,9 @@ D1
 - P3 is fixed, committed and pushed.
 - P4 is fixed, committed and pushed.
 - The PERFORMANCE / QUALITY queue (P1-P4) is now complete.
-- D1 is the next issue.
-- Do NOT start D1 until the user explicitly tells you to continue.
+- D1 is fixed, committed and pushed.
+- D2 is the next issue.
+- Do NOT start D2 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -1314,18 +1315,83 @@ USER CONFIRMED P4 IS COMMITTED AND PUSHED.
 
 ---
 
-# NEXT ISSUE
-
 ## D1 — `GoalCard.jsx` is unused
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
 
 Original audit finding:
 
 `GoalCard.jsx` is unused.
 
+File changed:
+- frontend/src/components/GoalCard.jsx (DELETED)
+
+Committed as `9dd57ec` "Fix(frontend) : Remove unused GoalCard component"
+(1 file, -49 / +0 — the file was deleted outright).
+
+Root cause:
+- `frontend/src/components/GoalCard.jsx` had zero live imports and zero live
+  usages. A repo-wide sweep for `GoalCard` found no import of it anywhere in
+  `frontend/src` and no JSX usage of it. The only component import of that name
+  shape in `Dashboard.jsx` is `PriorityGoalCard`, which is a different component.
+- The only remaining mentions of the name were documentation references, not
+  code references.
+- Because the component was unreachable, A2 deliberately skipped it (recorded as
+  "dead code scheduled for removal under D1") and A5 deliberately left its
+  failing `text-slate-500` contrast tokens in place unrendered.
+
+Fix:
+- `frontend/src/components/GoalCard.jsx` was DELETED. Nothing else was changed.
+- No live import needed removing, because no live import existed.
+
+Deliberately NOT changed:
+- `ProgressBar.jsx` (D2), `SavingsCard.jsx` (D3), the TransactionList summary bar
+  (D4), the default API export (D5), `react.svg` (D6) and the unused React
+  import in QRScanner (D7) were NOT touched. Each is its own issue.
+- No source file, layout, styling or behaviour was refactored beyond the deletion.
+- No backend changes.
+- The 9 pre-existing C4 lint violations were NOT fixed.
+- `FIX_PROGRESS.md` was NOT modified during the D1 implementation.
+
+Verification:
+- Repo-wide `GoalCard` sweep confirmed zero live imports and zero live JSX
+  usages; the only remaining matches were documentation text.
+- `npm run build` passed (`tsc -b && vite build`) — the build succeeding is the
+  load-bearing proof that no module imported the deleted file.
+- `npm run lint`: exactly the same 9 pre-existing C4 violations
+  (ContactCard.jsx, PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same
+  rules, same count as the pre-change baseline. NO NEW VIOLATIONS INTRODUCED.
+  NOT fixed.
+- `git diff --stat` confirmed a single deleted file (-49 lines) with no other
+  file modified.
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+- The D1 commit `9dd57ec` touches ONLY the deleted
+  `frontend/src/components/GoalCard.jsx`. It does not touch `Backend/` and does
+  not touch any of the four C4 files.
+- Working tree is clean after the push.
+
+LIMITATIONS:
+- No test framework and no browser / E2E verification exists in this project
+  (no test framework, no test files). The component's unreferenced status was
+  established by repo-wide text search plus a passing build, not by observing
+  runtime behaviour.
+
+USER CONFIRMED D1 IS COMMITTED AND PUSHED.
+
+---
+
+# NEXT ISSUE
+
+## D2 — `ProgressBar.jsx` only used by dead GoalCard
+
+STATUS: NEXT
+
+Original audit finding:
+
+`ProgressBar.jsx` only used by dead GoalCard.
+
 Original audit scope:
-- See the `DEAD CODE` entry for D1 and the recorded audit locations for this
+- See the `DEAD CODE` entry for D2 and the recorded audit locations for this
   issue.
 
 IMPORTANT:
@@ -1340,13 +1406,13 @@ Before changing anything:
 
 Do NOT:
 - modify backend files or anything under `Backend/`
-- fix another audit issue (D2-D7, E1-E8, etc.)
+- fix another audit issue (D3-D7, E1-E8, etc.)
 - refactor unrelated code
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
-- modify dead-code items D2-D7
+- modify dead-code items D3-D7
 
-Fix ONLY D1. Do NOT start any later issue (D2-D7, E1-E8).
+Fix ONLY D2. Do NOT start any later issue (D3-D7, E1-E8).
 
 ---
 
@@ -1504,13 +1570,13 @@ STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 `GoalCard.jsx` is unused.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 ## D2
 
 `ProgressBar.jsx` only used by dead GoalCard.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## D3
 
