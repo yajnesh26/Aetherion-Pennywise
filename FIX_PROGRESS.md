@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-D4
+D5
 
 ## Next issue
 
-D5
+D6
 
 ## Current state
 
-- The last committed issue is D4 (FIXED + COMMITTED + PUSHED + USER CONFIRMED).
+- The last committed issue is D5 (FIXED + COMMITTED + PUSHED + USER CONFIRMED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
@@ -84,8 +84,9 @@ D5
 - D2 is fixed, committed and pushed.
 - D3 is fixed, committed and pushed.
 - D4 is fixed, committed and pushed.
-- D5 is the next issue.
-- Do NOT start D5 until the user explicitly tells you to continue.
+- D5 is fixed, committed and pushed.
+- D6 is the next issue.
+- Do NOT start D6 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -1721,18 +1722,151 @@ USER CONFIRMED D4 IS COMMITTED AND PUSHED.
 
 ---
 
-# NEXT ISSUE
+## D5 — Unused default API export
 
-## D5 — Unused default API export.
-
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
 
 Original audit finding:
 
 Unused default API export.
 
+File changed:
+- frontend/src/services/api.js
+
+Committed as `00b9c50` "Fix(frontend) : Remove unused default API export"
+(1 file, +0 / -2).
+
+Root cause:
+- `frontend/src/services/api.js` exported the same axios instance twice: once as
+  the module-private `const API` (line 6) that every named wrapper calls, and
+  again as `export default API;` on the last line. The default export was a
+  DUPLICATE public surface on one object, not a second instance.
+- No live consumer ever imported it. All 8 importers of `services/api` use
+  destructured NAMED imports:
+  - `AddGoalFromLink.jsx:12` — `{ fetchProduct }`
+  - `TransactionList.jsx:7` — `{ getTransactions }`
+  - `Chatbot.jsx:5` — `{ askAI }`
+  - `Dashboard.jsx:10` — `{ getGoals, makePayment }`
+  - `Goals.jsx:7` — `{ getGoals, createGoal, deleteGoal, buyGoal }`
+  - `Login.jsx:4` — `{ loginUser, API_BASE_URL }`
+  - `Register.jsx:4` — `{ registerUser }`
+  - `SetupProfile.jsx:3` — `{ updateProfile }`
+- `API` itself is LIVE code and was kept: all 12 named export wrappers call it,
+  so the `baseURL`, the `Content-Type: application/json` header and the JWT
+  request interceptor are all still required.
+
+Reachability evidence gathered BEFORE removing it (per the D5 NEXT ISSUE
+requirement not to assume the audit state is unchanged):
+
+| # | Search | Result |
+| --- | --- | --- |
+| 1 | `git grep -n "services/api" -- frontend` | 10 hits — 8 live imports (all named) + 2 prose lines in `frontend/FRONTEND_README.md`. Zero default imports. |
+| 2 | Repo-wide filesystem sweep of all `.js/.jsx/.ts/.tsx/.html` files, INCLUDING untracked, excluding `node_modules` / `dist` | The same 8 named imports, nothing more. |
+| 3 | `import * as`, `import(`, `require(`, `createElement`, `new Function`, `eval(` across `frontend/src`, `index.html`, `vite.config.ts`, `eslint.config.js` | Only the 6 route-level page lazies in `App.tsx` and `import("@yudiel/react-qr-scanner")` in `QRScanner.jsx`. No path reaches `services/api`. |
+| 4 | Re-exports (`export * from`, `export {…} from`) and `@/`-style alias imports | Zero anywhere in the repo. |
+| 5 | Alias-resolution viability | `vite.config.ts` has no `resolve.alias`; no tsconfig has `compilerOptions.paths`. An `@/services/api` form could not resolve. |
+| 6 | Barrel / re-export hubs | The only `index.*` file in `frontend/src` is `index.css` — there is no JS/TS barrel. |
+| 7 | `git log --all -S "import API from" -- frontend/src` | Zero hits in ANY commit on ANY branch. The default export was never imported at any point in history. |
+| 8 | `git log -S "export default API"` | `1b6d8eb` added it, `6cfe822` removed it, `b655ef1` re-added it together with the named-export rewrite — and every importer added in `b655ef1` was already a named import. |
+
+Fix:
+- `export default API;` was DELETED from `frontend/src/services/api.js`, along
+  with the blank line that separated it from the last named export. That
+  statement and its blank line are the ENTIRE diff (1 file, +0 / -2).
+- All 12 named exports were left byte-identical and in place: `API_BASE_URL`,
+  `loginUser`, `registerUser`, `getGoals`, `createGoal`, `deleteGoal`,
+  `buyGoal`, `makePayment`, `getTransactions`, `updateProfile`, `askAI`,
+  `fetchProduct`.
+- The axios instance, its `baseURL`, the `Content-Type` header and the
+  `Authorization: Bearer <token>` request interceptor were NOT touched.
+- No consumer needed changing, because no consumer referenced the default export.
+
+Deliberately NOT changed:
+- No consumer was modified. There were 8 importers and every one of them already
+  imported only named exports, so removing the default export required zero edits
+  outside `api.js`.
+- The API service was NOT rewritten, split, renamed or restructured. The file
+  keeps its `axios.create` instance and its single-interceptor design.
+- `react.svg` (D6) and the unused React import in QRScanner (D7) were NOT
+  touched. Each is its own issue.
+- The two prose references to `src/services/api.js` in
+  `frontend/FRONTEND_README.md` (lines 64 and 161) were intentionally LEFT
+  UNCHANGED. They describe Axios usage and the `baseURL`, neither of which
+  implies a default export, so they are still accurate. Documentation cleanup
+  was out of scope.
+- No dependency was added, removed or version-changed. `axios` is still used.
+- The 9 pre-existing C4 lint violations were NOT fixed.
+- No source file, layout, styling or behaviour was refactored beyond the above.
+- No backend changes.
+- `FIX_PROGRESS.md` was NOT modified during the D5 implementation.
+
+Bundle impact:
+- There is NO bundle-size reduction, and none is claimed. The unused default
+  export was already tree-shaken out of the emitted `api-*.js` chunk, so
+  removing it changes no shipped bytes. That chunk stayed at exactly 36.66 kB /
+  gzip 14.53 kB, byte-size-identical to the D4 baseline.
+- The benefit is a smaller public API surface and the removal of a dead export
+  surface, NOT a smaller bundle.
+
+Verification:
+- Targeted `npx eslint src/services/api.js`: clean, 0 problems.
+- `npm run build` passed (`tsc -b && vite build`, 2381 modules — the SAME module
+  count as the D4 baseline). Every emitted chunk size matches the D4 baseline
+  (entry 229.54 kB / gzip 73.59 kB, `Goals` 371.52 kB, `Dashboard` 31.21 kB,
+  `api` 36.66 kB, `index.esm` 138.80 kB, CSS 66.51 kB). NO chunk-size warning.
+- `npm run lint`: exactly the same 9 pre-existing C4 violations
+  (ContactCard.jsx, PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same
+  rules, same line numbers, same count as the pre-change baseline. NO NEW
+  VIOLATIONS INTRODUCED. NOT fixed.
+- Post-edit re-sweep for `services/api` across the repo: the same 8 named
+  imports remain and ZERO default imports of `api.js` remain.
+- Post-edit `export` sweep of `api.js` confirmed all 12 named exports are still
+  present at their original lines (3, 23, 24, 27-30, 33, 34, 37, 40, 43) with
+  no default export.
+- EOL integrity: `api.js` verified 0 bare-LF (the repo uses CRLF).
+- `git diff --stat` confirmed a single modified file, +0 / -2, with no other file
+  changed.
+- `git status --porcelain -uall` showed only
+  `M frontend/src/services/api.js` and no untracked files.
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+- `git status --porcelain -- FIX_PROGRESS.md frontend/FRONTEND_README.md` both
+  returned empty during the D5 implementation.
+- The D5 commit `00b9c50` touches ONLY `frontend/src/services/api.js`
+  (1 file, +0 / -2). It does not touch `Backend/`, any consumer, or any of the
+  four C4 files.
+- D6-D7 targets confirmed still present and unmodified after the D5 commit
+  (`assets/react.svg` and `QRScanner.jsx` had empty git status).
+- Working tree is clean after the push.
+
+LIMITATIONS:
+- No test framework and no browser / E2E verification exists in this project
+  (no test framework, no test files). "Unused" was established by static
+  analysis, a repo-wide filesystem sweep, git history search and a passing
+  build, NOT by observing runtime imports in a browser.
+- The claim that no module imports the default export is a source-level fact
+  about the current tree. If a future module were to `import API from
+  "../services/api"`, it would now get a build-time error rather than the
+  instance — which is the intended, correct outcome, but it is a forward-looking
+  note, not a current regression.
+- This issue produces no measurable performance gain (see "Bundle impact").
+  Anyone expecting a smaller bundle from it will not see one.
+
+USER CONFIRMED D5 IS COMMITTED AND PUSHED.
+
+---
+
+# NEXT ISSUE
+
+## D6 — Unused `react.svg`.
+
+STATUS: NEXT
+
+Original audit finding:
+
+Unused `react.svg`.
+
 Original audit scope:
-- See the `DEAD CODE` entry for D5 and the recorded audit locations for this
+- See the `DEAD CODE` entry for D6 and the recorded audit locations for this
   issue.
 
 IMPORTANT:
@@ -1747,13 +1881,13 @@ Before changing anything:
 
 Do NOT:
 - modify backend files or anything under `Backend/`
-- fix another audit issue (D6-D7, E1-E8, etc.)
+- fix another audit issue (D7, E1-E8, etc.)
 - refactor unrelated code
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
-- modify dead-code items D6-D7
+- modify dead-code item D7
 
-Fix ONLY D5. Do NOT start any later issue (D6-D7, E1-E8).
+Fix ONLY D6. Do NOT start any later issue (D7, E1-E8).
 
 ---
 
@@ -1935,13 +2069,13 @@ STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 Unused default API export.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 ## D6
 
 Unused `react.svg`.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## D7
 
