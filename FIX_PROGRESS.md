@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-D3
+D4
 
 ## Next issue
 
-D4
+D5
 
 ## Current state
 
-- The last committed issue is D3 (FIXED + COMMITTED + PUSHED + USER CONFIRMED).
+- The last committed issue is D4 (FIXED + COMMITTED + PUSHED + USER CONFIRMED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
@@ -83,8 +83,9 @@ D4
 - D1 is fixed, committed and pushed.
 - D2 is fixed, committed and pushed.
 - D3 is fixed, committed and pushed.
-- D4 is the next issue.
-- Do NOT start D4 until the user explicitly tells you to continue.
+- D4 is fixed, committed and pushed.
+- D5 is the next issue.
+- Do NOT start D5 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -1618,18 +1619,120 @@ USER CONFIRMED D3 IS COMMITTED AND PUSHED.
 
 ---
 
-# NEXT ISSUE
+## D4 — Unused TransactionList summary bar
 
-## D4 — Unused TransactionList summary bar.
-
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
 
 Original audit finding:
 
 Unused TransactionList summary bar.
 
+File changed:
+- frontend/src/components/TransactionList.jsx
+
+Committed as `c0f0b18` "Fix(frontend) : Remove unused TransactionList summary bar"
+(1 file, +1 / -24).
+
+Root cause:
+- `TransactionList.jsx` rendered a summary bar ("Total Saved", current month
+  total and transaction count) behind a `!compact` guard.
+- The component's ONLY live consumer, `frontend/src/pages/Dashboard.jsx:299`,
+  passes a bare `compact` attribute, which is shorthand for `compact={true}`.
+  `!compact` was therefore permanently `false` and the summary bar was
+  permanently unrendered.
+- Git history and a call-site sweep found no full-mode consumer (no
+  `<TransactionList compact={false} />` and no second call site), so the
+  `!compact` branch was not a reachable state — the markup was functionally
+  dead code, not a hidden feature.
+- Because the branch was unreachable, the JSX it needed had also drifted out of
+  use: the `Clock` icon import existed only for the summary bar, and the
+  `totalSaved` state plus its update logic existed only to feed it.
+
+Fix:
+- Removed the summary-bar JSX block from `TransactionList.jsx`.
+- Removed the now-unused `Clock` import (summary-bar-only).
+- Removed the now-unreachable `totalSaved` state and its update logic.
+- Removed the orphaned `compact` prop declaration and its JSDoc, since nothing
+  in the component referenced it after the guard was deleted.
+- Everything the component actually renders in production was left intact: the
+  fetch, the loading branch, the empty state, the transaction limiting, the
+  date formatting and the transaction rows themselves.
+- No visible UI change, because the removed markup was never rendered.
+
+Deliberately NOT changed:
+- `TransactionList.jsx` itself remains LIVE code and is still imported and
+  rendered by `Dashboard.jsx`. It was modified, NOT deleted — unlike D1-D3,
+  which removed entirely dead files.
+- The bare `compact` attribute at `Dashboard.jsx:299` was intentionally LEFT
+  UNCHANGED. The prop no longer exists on the component, so the call site is now
+  a no-op attribute. Cleaning that up is a separate concern and is NOT a new
+  issue — do NOT treat it as one and do NOT fold it into another issue.
+- The default API export (D5), `react.svg` (D6) and the unused React import in
+  QRScanner (D7) were NOT touched. Each is its own issue.
+- No replacement UI was added, and no `compact={false}` full-mode variant was
+  created. There is no consumer for it.
+- No source file, layout, styling or behaviour was refactored beyond the above.
+- No backend changes.
+- The 9 pre-existing C4 lint violations were NOT fixed.
+- `FIX_PROGRESS.md` was NOT modified during the D4 implementation.
+
+Performance impact (recorded as a byproduct, NOT as a separate issue):
+- The removal shrank the `Dashboard` route chunk by approximately 0.75 kB,
+  because the summary-bar JSX and its supporting logic were bundled but never
+  rendered.
+- Tailwind purged the summary bar's unique utility classes, reducing the emitted
+  CSS by approximately 45 bytes.
+- Both reductions are DIRECT BYPRODUCTS of removing the dead branch. They are NOT
+  separate performance findings and must NOT be re-raised on their own — the
+  same treatment already given to D3's 273 B CSS reduction.
+
+Verification:
+- Targeted `npx eslint src/components/TransactionList.jsx`: clean, 0 problems.
+- `npm run build` passed (`tsc -b && vite build`). Every JS chunk size matches
+  the D3 baseline except the `Dashboard` chunk, which is smaller by the expected
+  amount. NO chunk-size warning.
+- `npm run lint`: exactly the same 9 pre-existing C4 violations
+  (ContactCard.jsx, PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same
+  rules, same count as the pre-change baseline. NO NEW VIOLATIONS INTRODUCED.
+  NOT fixed.
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+- `git diff --stat` confirmed a single modified file with no other file changed.
+- The D4 commit `c0f0b18` touches ONLY
+  `frontend/src/components/TransactionList.jsx` (1 file, +1 / -24). It does not
+  touch `Backend/`, `Dashboard.jsx` or any of the four C4 files.
+- D5-D7 targets confirmed still present and unmodified after the D4 commit
+  (`services/api.js`, `assets/react.svg`, `QRScanner.jsx` all had empty git
+  status).
+- Working tree is clean after the push.
+
+LIMITATIONS:
+- No test framework and no browser / E2E verification exists in this project
+  (no test framework, no test files). The unreachability of the summary bar was
+  established by call-site analysis, git history and the `compact` shorthand
+  semantics, not by observing a render in a browser.
+- The rendered output was verified by source review and build output, NOT by
+  visual comparison. The argument that nothing visible changed rests on the
+  guard being permanently false, not on a screenshot.
+- The orphaned `compact` attribute at `Dashboard.jsx:299` was intentionally left
+  in place, so that call site still passes an attribute the component no longer
+  declares. It is inert, but it is now dead markup at the call site.
+
+USER CONFIRMED D4 IS COMMITTED AND PUSHED.
+
+---
+
+# NEXT ISSUE
+
+## D5 — Unused default API export.
+
+STATUS: NEXT
+
+Original audit finding:
+
+Unused default API export.
+
 Original audit scope:
-- See the `DEAD CODE` entry for D4 and the recorded audit locations for this
+- See the `DEAD CODE` entry for D5 and the recorded audit locations for this
   issue.
 
 IMPORTANT:
@@ -1644,13 +1747,13 @@ Before changing anything:
 
 Do NOT:
 - modify backend files or anything under `Backend/`
-- fix another audit issue (D5-D7, E1-E8, etc.)
+- fix another audit issue (D6-D7, E1-E8, etc.)
 - refactor unrelated code
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
-- modify dead-code items D5-D7
+- modify dead-code items D6-D7
 
-Fix ONLY D4. Do NOT start any later issue (D5-D7, E1-E8).
+Fix ONLY D5. Do NOT start any later issue (D6-D7, E1-E8).
 
 ---
 
@@ -1826,13 +1929,13 @@ STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 Unused TransactionList summary bar.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 ## D5
 
 Unused default API export.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## D6
 
