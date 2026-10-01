@@ -41,5 +41,3 @@ export const askAI = (data) => API.post("/ai/ask", data);
 
 // ─── Product Scraper ─────────────────────────────────────
 export const fetchProduct = (data) => API.post("/product/fetch", data);
-
-export default API;
