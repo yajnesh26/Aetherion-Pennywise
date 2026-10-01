@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import {
   ArrowUpRight,
-  Clock,
-  PiggyBank,
   Loader2,
   Receipt,
 } from "lucide-react";
@@ -14,11 +12,9 @@ import { getTransactions } from "../services/api";
  *
  * Props (optional):
  *  - limit  : number — max transactions to show (default: all)
- *  - compact: boolean — smaller cards for dashboard embed
  */
-export default function TransactionList({ limit, compact = false }) {
+export default function TransactionList({ limit }) {
   const [transactions, setTransactions] = useState([]);
-  const [totalSaved, setTotalSaved] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,7 +22,6 @@ export default function TransactionList({ limit, compact = false }) {
       try {
         const res = await getTransactions();
         setTransactions(res.data.transactions || []);
-        setTotalSaved(res.data.totalRoundUpSaved || 0);
       } catch (err) {
         console.error("Failed to fetch transactions:", err);
       } finally {
@@ -80,24 +75,6 @@ export default function TransactionList({ limit, compact = false }) {
 
   return (
     <div className="space-y-3">
-      {/* Summary bar (only in full mode) */}
-      {!compact && (
-        <div className="flex items-center justify-between px-1 mb-1">
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-slate-500" />
-            <span className="text-xs text-slate-500">
-              {transactions.length} transaction{transactions.length !== 1 ? "s" : ""}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <PiggyBank className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-xs font-semibold text-emerald-400">
-              Total saved: ₹{totalSaved.toLocaleString("en-IN")}
-            </span>
-          </div>
-        </div>
-      )}
-
       <div className="bg-slate-800/50 backdrop-blur rounded-2xl border border-slate-700/40 divide-y divide-slate-700/20 overflow-hidden">
         {displayed.map((tx) => (
           <div
