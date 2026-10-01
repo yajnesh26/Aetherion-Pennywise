@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-D2
+D3
 
 ## Next issue
 
-D3
+D4
 
 ## Current state
 
-- The last committed issue is D2 (FIXED + COMMITTED + PUSHED + USER CONFIRMED).
+- The last committed issue is D3 (FIXED + COMMITTED + PUSHED + USER CONFIRMED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
@@ -82,8 +82,9 @@ D3
 - The PERFORMANCE / QUALITY queue (P1-P4) is now complete.
 - D1 is fixed, committed and pushed.
 - D2 is fixed, committed and pushed.
-- D3 is the next issue.
-- Do NOT start D3 until the user explicitly tells you to continue.
+- D3 is fixed, committed and pushed.
+- D4 is the next issue.
+- Do NOT start D4 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
@@ -1481,18 +1482,154 @@ USER CONFIRMED D2 IS COMMITTED AND PUSHED.
 
 ---
 
-# NEXT ISSUE
-
 ## D3 — `SavingsCard.jsx` is unused
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
 
 Original audit finding:
 
 `SavingsCard.jsx` is unused.
 
+Files changed:
+- frontend/src/components/SavingsCard.jsx (DELETED)
+
+Committed as `5a095ea` "Fix(frontend) : Remove unused SavingsCard component"
+(1 file, -60 / +0 — the file was deleted outright).
+
+Root cause:
+- `frontend/src/components/SavingsCard.jsx` was authored in `ced2d88` ("Modified
+  the dashboard") together with its ONLY consumer: a
+  `import SavingsCard from "../components/SavingsCard";` plus a
+  `<SavingsCard totalSavings activeGoals streak roundUpsToday />` block in
+  `Dashboard.jsx`. The very next dashboard rewrite, `5a86e04` ("Removed the
+  transaction page and modified the goals page"), deleted BOTH the import and the
+  JSX, replacing the 4-tile stats grid with the inline Savings Wallet banner
+  (`Dashboard.jsx:232-254`) and `PriorityGoalCard` (`Dashboard.jsx:294`).
+- The file was never deleted and has not been modified since it was created, so it
+  had ZERO live consumers by the time D3 was picked up. D3's job was to PROVE
+  that by inspection before deleting anything — not to trust the audit text.
+- Because the component was unreachable, A5 deliberately left its one failing
+  `text-slate-500` contrast token (recorded as "`SavingsCard.jsx` (1)") in place
+  unrendered.
+
+Reachability evidence gathered BEFORE deleting (per the D3 NEXT ISSUE
+requirement not to assume the audit state is unchanged):
+
+| # | Search | Result |
+| --- | --- | --- |
+| 1 | Case-insensitive `git grep -in "savingscard"` over all tracked files | 7 hits — the component's own definition, 5 in `FIX_PROGRESS.md`, and 1 in `frontend/FRONTEND_README.md`. Zero code references. |
+| 2 | Full import / export manifest — every `import` and `export … from` line across all 27 `frontend/src` files | Zero imports of `SavingsCard`. |
+| 3 | Filesystem-wide text sweep over all of `frontend/` excluding `node_modules` / `dist` (catches untracked files too) | Only the definition and the README line. |
+| 4 | Alias-resolution viability | `vite.config.ts` has no `resolve.alias`; no tsconfig has `compilerOptions.paths`. No `@/components/SavingsCard` form could resolve. |
+| 5 | Barrel / re-export hubs | The only `index.*` file in `frontend/src` is `index.css` — there is no JS/TS barrel, so no re-export path exists. |
+| 6 | `import(`, `lazy(`, `require(`, `createElement`, `Suspense`, `new Function`, `eval(`, plus `index.html` | Only the 6 route-level page lazies in `App.tsx` and `import("@yudiel/react-qr-scanner")` in `QRScanner.jsx`. No dynamic, lazy or runtime reference to `SavingsCard`. |
+| 7 | Routing structure (`App.tsx:29-38`) | 8 routes, all lazily imported pages; `Navbar` is the only eagerly imported component. `SavingsCard` is in no route. |
+| 8 | Do live pages need this component? | No — `Dashboard.jsx:232-254` renders the Savings Wallet banner inline and `PriorityGoalCard` (`Dashboard.jsx:294`) covers goal progress. The old 4-tile grid is not rendered anywhere. |
+| 9 | `git log -S "SavingsCard" --all -- frontend/src` | Exactly 2 commits on `main` ever touched the name: `ced2d88` (added the file AND its only import) and `5a86e04` (dropped the import and the JSX). The third hit, `a614b97`, is on `remotes/origin/akshay` and is NOT an ancestor of `main` (`git merge-base --is-ancestor a614b97 HEAD` exits 1). |
+| 10 | `git log --follow` on the file | Exactly 1 commit ever: `ced2d88` (A). Never modified since creation. |
+| 11 | Emitted-bundle probe for `"Round-Ups Today"`, `"Day Streak"`, `"Active Goals"` | Zero hits in `dist/` — it was never present in any emitted chunk. |
+
+Fix:
+- `frontend/src/components/SavingsCard.jsx` was DELETED. Nothing else was changed.
+- No live import needed removing, because no live import existed.
+
+Deliberately NOT changed:
+- The TransactionList summary bar (D4), the default API export (D5), `react.svg`
+  (D6) and the unused React import in QRScanner (D7) were NOT touched. Each is its
+  own issue.
+- The stale `SavingsCard.jsx` entry in the `frontend/FRONTEND_README.md`
+  component tree (line 34) was intentionally LEFT UNCHANGED. Documentation
+  cleanup was explicitly out of scope for D3, so that file tree now has two
+  entries out of date (D2's `ProgressBar.jsx` and this one). Recorded here as an
+  observation only — do NOT treat it as a new issue and do NOT fold it into
+  another issue.
+- No replacement component was introduced for it. The live Savings Wallet banner
+  and `PriorityGoalCard` were left exactly as they were.
+- No consumer was refactored, because there were no consumers to refactor.
+- No source file, layout, styling or behaviour was refactored beyond the deletion.
+- No backend changes.
+- The 9 pre-existing C4 lint violations were NOT fixed.
+- `FIX_PROGRESS.md` was NOT modified during the D3 implementation.
+
+Verification:
+- Repo-wide post-delete sweep for `savingscard` confirmed NO live references
+  remain; `git grep` over `frontend/src` now exits 1. The only surviving matches
+  are documentation text in `FIX_PROGRESS.md` and
+  `frontend/FRONTEND_README.md`.
+- Targeted `npx eslint src/components`: 9 problems, all pre-existing C4
+  (`User`, `avatarColors`, 3× unused `e`, 2× `no-empty`, `ArrowUp`,
+  `walletBalance`). Targeted `npx eslint src/pages src/App.tsx src/hooks
+  src/services src/utils`: 0 problems. NO NEW VIOLATIONS INTRODUCED.
+- `npm run build` passed (`tsc -b && vite build`, 2381 modules — the SAME module
+  count as the D2 baseline, which is the proof that no module imported the
+  deleted file). NO chunk-size warning.
+- `npm run lint`: exactly the same 9 pre-existing C4 violations
+  (ContactCard.jsx, PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same
+  rules, same line numbers, same count as the pre-change baseline, which was
+  captured BEFORE the deletion. NOT fixed.
+- Every JS chunk size is byte-for-byte identical to the D2 baseline
+  (`index-*.js` 229.54 kB / gzip 73.59 kB, `Goals-*.js` 371.52 kB,
+  `Dashboard-*.js` 31.96 kB, `api-*.js` 36.66 kB, `index.esm-*.js` 138.80 kB).
+  Only the chunk HASHES changed, and only because the CSS asset filename is
+  embedded in the entry chunk.
+- The only build-output delta is the CSS: 66.83 kB (`index-CexWdzcL.css`) to
+  66.56 kB (`index-D817xO9L.css`), i.e. −273 bytes. A rule-by-rule diff of the
+  two emitted stylesheets shows 0 rules ADDED and exactly 3 REMOVED:
+  `.grid-cols-2`, `.hover\:bg-slate-800\/70:hover` and its
+  `@supports (color:color-mix(in lab, red, red))` duplicate. A `git grep`
+  confirmed neither class is used in any remaining source file, i.e. they were
+  SavingsCard-only and Tailwind correctly purged them once the last consumer was
+  removed. This 273 B reduction is a DIRECT BYPRODUCT of the D3 deletion of
+  unused SavingsCard-only Tailwind utilities. It is NOT a separate issue, NOT a
+  performance finding, and must NOT be re-raised on its own.
+- `git diff --cached --stat` confirmed a single deleted file (-60 lines) with no
+  other file modified; `git diff --stat` was empty and the only entry in
+  `git status --porcelain` was the deletion.
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+- `git status --porcelain -- FIX_PROGRESS.md` and
+  `git status --porcelain -- frontend/FRONTEND_README.md` both returned empty
+  during the D3 implementation.
+- The D3 commit `5a095ea` touches ONLY the deleted
+  `frontend/src/components/SavingsCard.jsx` (1 file, -60 / +0). It does not
+  touch `Backend/` and does not touch any of the four C4 files.
+- D4-D7 targets confirmed still present and unmodified after the D3 commit
+  (`TransactionList.jsx`, `services/api.js`, `assets/react.svg`,
+  `QRScanner.jsx` all had empty git status).
+- Working tree is clean after the push.
+
+LIMITATIONS:
+- No test framework and no browser / E2E verification exists in this project
+  (no test framework, no test files). The component's unreferenced status was
+  established by repo-wide text search, git history, alias / barrel analysis,
+  the module-graph module count, a `dist/` string probe and a passing build, not
+  by observing runtime behaviour.
+- The deletion removes the one `text-slate-500` occurrence A5 had flagged in this
+  dead file. That resolves as a byproduct of D3, not as a separate accessibility
+  fix.
+- The measured baseline used for the bundle / CSS comparison was produced by
+  temporarily restoring the file from `HEAD`, building, then deleting it again and
+  rebuilding. The working tree and the git index were left with only the intended
+  single-file deletion, which `git status --porcelain` confirms.
+- Unlike D1 and D2, the emitted CSS is NOT byte-identical to the previous
+  baseline (see the −273 B note above). That is expected and is a removal-only
+  consequence of the dead file's unique utility classes.
+
+USER CONFIRMED D3 IS COMMITTED AND PUSHED.
+
+---
+
+# NEXT ISSUE
+
+## D4 — Unused TransactionList summary bar.
+
+STATUS: NEXT
+
+Original audit finding:
+
+Unused TransactionList summary bar.
+
 Original audit scope:
-- See the `DEAD CODE` entry for D3 and the recorded audit locations for this
+- See the `DEAD CODE` entry for D4 and the recorded audit locations for this
   issue.
 
 IMPORTANT:
@@ -1507,13 +1644,13 @@ Before changing anything:
 
 Do NOT:
 - modify backend files or anything under `Backend/`
-- fix another audit issue (D4-D7, E1-E8, etc.)
+- fix another audit issue (D5-D7, E1-E8, etc.)
 - refactor unrelated code
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
-- modify dead-code items D4-D7
+- modify dead-code items D5-D7
 
-Fix ONLY D3. Do NOT start any later issue (D4-D7, E1-E8).
+Fix ONLY D4. Do NOT start any later issue (D5-D7, E1-E8).
 
 ---
 
@@ -1683,13 +1820,13 @@ STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 `SavingsCard.jsx` is unused.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 ## D4
 
 Unused TransactionList summary bar.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## D5
 
