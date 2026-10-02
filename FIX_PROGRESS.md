@@ -59,11 +59,11 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-D6
+D7
 
 ## Next issue
 
-D7
+D8
 
 ## Current state
 
@@ -86,8 +86,9 @@ D7
 - D4 is fixed, committed and pushed.
 - D5 is fixed, committed and pushed.
 - D6 is fixed, committed and pushed.
-- D7 is the next issue.
-- Do NOT start D7 until the user explicitly tells you to continue.
+- D7 is fixed, committed and pushed.
+- D8 is the next issue.
+- Do NOT start D8 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - Do NOT invent issue numbers.
