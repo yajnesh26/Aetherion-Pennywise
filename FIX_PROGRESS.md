@@ -63,11 +63,11 @@ D7
 
 ## Next issue
 
-D8
+E1
 
 ## Current state
 
-- The last committed issue is D6 (FIXED + COMMITTED + PUSHED + USER CONFIRMED).
+- The last committed issue is D7 (FIXED + COMMITTED + PUSHED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
@@ -87,11 +87,12 @@ D8
 - D5 is fixed, committed and pushed.
 - D6 is fixed, committed and pushed.
 - D7 is fixed, committed and pushed.
-- D8 is the next issue.
-- Do NOT start D8 until the user explicitly tells you to continue.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
+- There is NO D8 in the original audit. D1-D7 are the complete DEAD CODE queue.
 - Do NOT invent issue numbers.
+- E1 is the next issue.
+- Do NOT start E1 until the user explicitly tells you to continue.
 
 ---
 
@@ -1859,37 +1860,36 @@ USER CONFIRMED D5 IS COMMITTED AND PUSHED.
 
 # NEXT ISSUE
 
-## D6 — Unused `react.svg`.
+## E1 — Goal target 0 causes NaN progress.
 
 STATUS: NEXT
 
 Original audit finding:
 
-Unused `react.svg`.
+Goal target 0 causes NaN progress.
 
 Original audit scope:
-- See the `DEAD CODE` entry for D6 and the recorded audit locations for this
-  issue.
+- See the `EDGE CASES / MINOR` entry for E1 and the recorded audit locations for
+  this issue.
 
 IMPORTANT:
 Before changing anything:
 
 1. Inspect the current source and compare it with this description — do not
    assume the audit state is unchanged.
-2. Preserve the existing application behaviour. No visible UI change is
-   expected.
+2. Preserve the existing application behaviour.
 3. Do NOT invent requirements. Use the tooling and patterns already present in
    the project.
 
 Do NOT:
 - modify backend files or anything under `Backend/`
-- fix another audit issue (D7, E1-E8, etc.)
+- fix another audit issue (E2-E8, etc.)
 - refactor unrelated code
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
-- modify dead-code item D7
+- re-open or modify dead-code items D1-D7
 
-Fix ONLY D6. Do NOT start any later issue (D7, E1-E8).
+Fix ONLY E1. Do NOT start any later issue (E2-E8).
 
 ---
 
@@ -2077,13 +2077,13 @@ STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 Unused `react.svg`.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 ## D7
 
 Unused React import in QRScanner.
 
-STATUS: PENDING
+STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 ---
 
