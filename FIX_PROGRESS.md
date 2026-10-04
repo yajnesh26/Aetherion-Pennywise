@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-E1
+E2
 
 ## Next issue
 
-E2
+E3
 
 ## Current state
 
-- The last committed issue is E1 (FIXED + COMMITTED + PUSHED).
+- The last committed issue is E2 (FIXED + COMMITTED + PUSHED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
@@ -88,12 +88,13 @@ E2
 - D6 is fixed, committed and pushed.
 - D7 is fixed, committed and pushed.
 - E1 is fixed, committed and pushed.
+- E2 is fixed, committed and pushed.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - There is NO D8 in the original audit. D1-D7 are the complete DEAD CODE queue.
 - Do NOT invent issue numbers.
-- E2 is the next issue.
-- Do NOT start E2 until the user explicitly tells you to continue.
+- E3 is the next issue.
+- Do NOT start E3 until the user explicitly tells you to continue.
 
 ---
 
@@ -2014,18 +2015,161 @@ USER CONFIRMED E1 IS COMMITTED AND PUSHED.
 
 ---
 
-# NEXT ISSUE
-
 ## E2 — Unreachable exact-amount RoundUpPopup branch.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
 
 Original audit finding:
 
 Unreachable exact-amount RoundUpPopup branch.
 
+Files changed:
+- frontend/src/components/RoundUpPopup.jsx
+- frontend/src/pages/Dashboard.jsx
+
+Committed as `d4a8cc4` "Fix(frontend) : Restore exact-amount round-up branch"
+(2 files, +3 / -1).
+
+Root cause:
+- `RoundUpPopup.jsx` chose between the savings branch and the exact-amount
+  branch with `const hasSavings = spare > 0;`, where `spare` is the backend's
+  `savedAmount`, read as `roundUpInfo?.savedAmount || 0`.
+- The backend floors that value. In `Backend/controllers/paymentController.js`
+  the smart round-up computes `savedAmount = Math.max(roundedAmount - amount, 1)`,
+  so a successful payment response ALWAYS carries `savedAmount >= 1` and
+  `spare > 0` is always true.
+- The exact-amount branch was therefore unreachable for any real payment. A
+  payment whose round-up added nothing (`roundedAmount === amount`) still
+  rendered the savings branch, falsely claiming "Rounded to ..." and "Spare
+  change ...".
+- The API already returns `roundedAmount` (`Backend/models/Transaction.js`), but
+  the sole caller discarded it. `Dashboard.jsx` built `roundUpInfo` from only
+  `savedAmount` and `walletBalance`, so the popup never received the one value
+  it needed to make the branch decision truthfully.
+- History confirms a regression. Before commit `b655ef1` the component computed
+  `Math.ceil(original / 10) * 10` locally, so an amount already on a multiple of
+  10 produced `spare === 0` and reached the exact-amount branch. `b655ef1`
+  replaced that with the backend `savedAmount`, which is floored, and the branch
+  died.
+- The only other input that could reach the exact branch was a null or absent
+  `savedAmount`. `roundUpInfo` and `roundUpPopup` are set together in the same
+  success path of `Dashboard.handlePaymentComplete`, so `roundUpInfo` cannot be
+  null while the popup is open. That path is not reachable in the application.
+
+Fix:
+- `Dashboard.jsx` now forwards the field the API already returned by adding
+  `roundedAmount: transaction.roundedAmount,` to the `setRoundUpInfo` object.
+- `RoundUpPopup.jsx` decides the branch from the amount actually charged:
+  `const roundedAmount = roundUpInfo?.roundedAmount ?? original + spare;` and
+  `const hasSavings = roundedAmount > original;`
+- The `??` fallback preserves the previous behaviour bit-for-bit whenever
+  `roundedAmount` is absent, so the change is backward compatible with any
+  caller or cached payload that does not include the field.
+- Displayed values, the credited amount and the save payload are unchanged. The
+  popup still shows the backend `savedAmount` as "Spare change" and still calls
+  `onSave?.({ amount: spare, original, roundedUp })`.
+- Three lines across two files. No new file, no helper, no config change, no
+  dependency change.
+
+Deliberately NOT changed:
+- The pre-`b655ef1` local `Math.ceil(original / 10) * 10` calculation was NOT
+  restored. The common quick-amount chips are multiples of 10 and the backend
+  does credit savings for those payments, so recomputing locally would have made
+  the popup claim "exact amount" for payments that really did save money.
+- The displayed "Rounded to ..." value (`roundedUp = original + spare`) was NOT
+  changed. It deliberately stays on the backend `savedAmount`, and changing what
+  the round-up copy displays is the E8 finding ("misleading round-up copy"), not
+  E2.
+- The exact branch's pre-existing `Save ₹{spare}` button, the `onSave` payload,
+  the local `saved` state and the wallet interaction were NOT touched.
+- `PaymentModal.jsx` was traced read-only to confirm the parsed amount path and
+  was NOT modified.
+- `Backend/controllers/paymentController.js` and `Backend/models/Transaction.js`
+  were READ ONLY, to establish the flooring that makes the branch unreachable and
+  to confirm `roundedAmount` is already part of the response. NOT modified.
+- E3-E8 were NOT started. No E3-E8 file was modified.
+- The 9 pre-existing C4 lint violations were NOT fixed.
+- No unrelated cleanup, refactoring or accessibility change.
+- No backend changes.
+
+Verification:
+- The real `RoundUpPopup` component was bundled and server-rendered with
+  `react-dom/server`, then the emitted HTML was captured for 6 scenarios and
+  compared byte-for-byte between the PRE-FIX and POST-FIX code:
+  - Pre-fix negative control: the exact-amount scenario (`amount` 500,
+    `roundedAmount` 500, `savedAmount` 1) rendered the SAVINGS branch, showing
+    "Rounded to Rs501" and "Spare change Rs1" — claiming the round-up added money
+    when it added nothing.
+  - Post-fix, the identical scenario renders the EXACT-AMOUNT branch: "Your
+    payment was an exact amount." / "No spare change this time."
+  - Normal round-up scenarios were proven unchanged by A/B: Rs500 -> Rs550 and
+    Rs1000 -> Rs1100 render byte-identical markup before and after the fix.
+  - The sub-rupee case (`amount` 9.25, `roundedAmount` 10, `savedAmount` 1, i.e.
+    a true delta of 0.75 floored to 1) also renders byte-identical markup before
+    and after, confirming the credited `savedAmount` is still what is displayed.
+  - Backward compatibility was verified: a `roundUpInfo` without `roundedAmount`
+    still renders the savings branch, and a `null` `roundUpInfo` still renders
+    the exact-amount branch — both byte-identical to pre-fix output.
+  - 5 of the 6 scenarios were byte-identical before and after. Only the
+    exact-amount scenario changed, and only by switching branch.
+  - The harness and its bundle were deleted afterwards.
+- Targeted `npx eslint src/components/RoundUpPopup.jsx src/pages/Dashboard.jsx`
+  reported ONLY the existing C4 baseline violations in `RoundUpPopup.jsx`
+  (`'ArrowUp' is defined but never used` at `2:35`, `'walletBalance' is assigned
+  a value but never used` at `21:9` — shifted from `20:9` by the one added line).
+  `Dashboard.jsx` was clean. NO NEW VIOLATIONS INTRODUCED. NOT fixed.
+- `npm run lint`: exactly the same 9 pre-existing C4 violations
+  (ContactCard.jsx, PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same
+  rules, same count as the pre-change baseline. Full lint remains at the known
+  9-violation C4 baseline. NO NEW VIOLATIONS INTRODUCED. NOT fixed.
+- `npm run build` passed (`tsc -b && vite build`, 2381 modules transformed — the
+  same module count as the E1 baseline).
+- EOL integrity: both files verified 100% CRLF, 0 bare LF (RoundUpPopup.jsx 147
+  CRLF, Dashboard.jsx 367 CRLF; counts +1 from the added lines; the repo uses
+  `core.autocrlf=true`). `git diff --check` was clean.
+- `git show --stat d4a8cc4` confirmed the commit touches ONLY the 2 E2 files
+  (2 files, +3 / -1) and does not touch `Backend/` or any of the four C4 files.
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+- `git status --porcelain -- FIX_PROGRESS.md` was empty during the E2
+  implementation; this tracker update was made afterwards, as a separate
+  documentation step.
+- The E2 commit `d4a8cc4` is pushed: `git rev-parse HEAD` equals `git rev-parse
+  origin/main`, and `git log origin/main..HEAD` is empty.
+- E3-E8 were untouched — the commit touches no E3-E8 file and the working tree
+  was clean apart from the two E2 source files.
+- No source code was modified as part of this tracker update.
+
+LIMITATIONS:
+- The current backend algorithm cannot actually produce an exact-amount
+  response: the smart round-up base is a percentage of the amount plus a small
+  additive band, so `roundedAmount` is always greater than `amount`. The fix
+  makes the frontend honour a field it was already receiving and discarding, and
+  it is fully backward compatible, but with today's backend no live payment will
+  reach the exact-amount branch. Making the backend emit exact amounts is out of
+  scope for E2 and was NOT done.
+- The project has no test framework and no browser / E2E verification. The
+  scenarios were verified by server-rendering the real component to static HTML
+  and comparing the markup, which exercises the exact branch expressions but is
+  NOT a browser paint.
+- The exact-amount scenario was NOT reproduced against a live backend, only in
+  isolation via the render harness using the real API response shape.
+
+USER CONFIRMED E2 IS COMMITTED AND PUSHED.
+
+---
+
+# NEXT ISSUE
+
+## E3 — Logout leaves stale `pennywise_user`.
+
+STATUS: NEXT
+
+Original audit finding:
+
+Logout leaves stale `pennywise_user`.
+
 Original audit scope:
-- See the `EDGE CASES / MINOR` entry for E2 and the recorded audit locations for
+- See the `EDGE CASES / MINOR` entry for E3 and the recorded audit locations for
   this issue.
 
 IMPORTANT:
@@ -2039,13 +2183,13 @@ Before changing anything:
 
 Do NOT:
 - modify backend files or anything under `Backend/`
-- fix another audit issue (E3-E8, etc.)
+- fix another audit issue (E4-E8, etc.)
 - refactor unrelated code
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
 - re-open or modify dead-code items D1-D7
 
-Fix ONLY E2. Do NOT start any later issue (E3-E8).
+Fix ONLY E3. Do NOT start any later issue (E4-E8).
 
 ---
 
@@ -2255,13 +2399,13 @@ STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 Unreachable exact-amount RoundUpPopup branch.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 ## E3
 
 Logout leaves stale `pennywise_user`.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## E4
 
