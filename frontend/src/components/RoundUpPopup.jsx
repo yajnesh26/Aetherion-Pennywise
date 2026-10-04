@@ -17,6 +17,7 @@ export default function RoundUpPopup({ payment, roundUpInfo, onSave, onSkip }) {
   // Use real values from the backend API instead of recalculating locally
   const spare = roundUpInfo?.savedAmount || 0;
   const roundedUp = original + spare;
+  const roundedAmount = roundUpInfo?.roundedAmount ?? original + spare;
   const walletBalance = roundUpInfo?.walletBalance || 0;
 
   // Derive a truthful recipient label. Free-form "Send Money"/"Pay Contacts"
@@ -31,7 +32,7 @@ export default function RoundUpPopup({ payment, roundUpInfo, onSave, onSkip }) {
     return payment?.contact?.name || "merchant";
   })();
 
-  const hasSavings = spare > 0;
+  const hasSavings = roundedAmount > original;
 
   const handleSave = () => {
     setSaved(true);

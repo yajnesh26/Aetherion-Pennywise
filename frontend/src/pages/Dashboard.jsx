@@ -163,6 +163,7 @@ export default function Dashboard() {
       // Store round-up info for popup (backend-driven)
       setRoundUpInfo({
         savedAmount: transaction.savedAmount,
+        roundedAmount: transaction.roundedAmount,
         walletBalance: savingsWallet,
       });
 
