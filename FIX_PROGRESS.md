@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-D7
+E1
 
 ## Next issue
 
-E1
+E2
 
 ## Current state
 
-- The last committed issue is D7 (FIXED + COMMITTED + PUSHED).
+- The last committed issue is E1 (FIXED + COMMITTED + PUSHED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
@@ -87,12 +87,13 @@ E1
 - D5 is fixed, committed and pushed.
 - D6 is fixed, committed and pushed.
 - D7 is fixed, committed and pushed.
+- E1 is fixed, committed and pushed.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - There is NO D8 in the original audit. D1-D7 are the complete DEAD CODE queue.
 - Do NOT invent issue numbers.
-- E1 is the next issue.
-- Do NOT start E1 until the user explicitly tells you to continue.
+- E2 is the next issue.
+- Do NOT start E2 until the user explicitly tells you to continue.
 
 ---
 
@@ -1858,18 +1859,173 @@ USER CONFIRMED D5 IS COMMITTED AND PUSHED.
 
 ---
 
-# NEXT ISSUE
-
 ## E1 — Goal target 0 causes NaN progress.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
 
 Original audit finding:
 
 Goal target 0 causes NaN progress.
 
+Files changed:
+- frontend/src/components/GoalRow.jsx
+- frontend/src/components/GoalsTable.jsx
+- frontend/src/components/PredictionGraph.jsx
+- frontend/src/components/PriorityGoalCard.jsx
+
+Committed as `d3a22f4` "Fix(frontend) : Handle zero-target goal progress"
+(4 files, +4 / -4).
+
+Root cause:
+- The four frontend goal components each computed progress with an UNGUARDED
+  division by the goal target:
+  1. `GoalRow.jsx:28` — `Math.min((totalSavings / goal.target) * 100, 100)`
+     (desktop table row progress bar)
+  2. `GoalsTable.jsx:91` — the same expression (mobile card progress bar)
+  3. `PredictionGraph.jsx:96` — the same expression, assigned to `percentage`
+     (the "X% funded" chip)
+  4. `PriorityGoalCard.jsx:37` —
+     `Math.min((totalSavings / featuredGoal.target) * 100, 100)`
+- With `target === 0` and `wallet === 0` the division is `0 / 0`, which is `NaN`.
+  `Math.min(NaN, 100)` is also `NaN` (verified: `Math.min(NaN, 100)` -> `NaN`),
+  so the clamp did not help. `NaN.toFixed(0)` returns the string `"NaN"`, so the
+  UI rendered a literal `NaN%` label, and `style={{ width: "NaN%" }}` is an
+  invalid CSS length that the browser discards, leaving the bar unsized.
+- The NaN case is specifically `0 / 0`. With `target === 0` and a non-zero
+  wallet the division is `x / 0` = `Infinity`, which the existing
+  `Math.min(..., 100)` already clamped to `100`, so that sibling case never
+  produced NaN and was left behaving exactly as before.
+- The same render already computed `isReady = totalSavings >= goal.target`,
+  which is `true` for a 0 target, and `remaining` = `0`. So a 0-target goal was
+  simultaneously labelled "Ready to Buy" and "NaN%".
+- A repo-wide sweep for any division by a goal target found EXACTLY these four
+  sites. All four components are live and are fed unvalidated API data:
+  `Goals.jsx:44` and `Dashboard.jsx:84` normalize `target: g.targetPrice`
+  straight from `getGoals()` with no numeric check. Consumer chain:
+  `GoalRow` <- `GoalsTable` <- `Goals`, `PredictionGraph` <- `Goals`,
+  `PriorityGoalCard` <- `Dashboard:294`.
+
+Fix:
+- Added a denominator guard to each of the four divisions, e.g.
+  `const progress = goal.target > 0 ? Math.min((totalSavings / goal.target) * 100, 100) : 100;`
+  (`PriorityGoalCard.jsx` uses `featuredGoal.target` in both positions).
+- The `100` fallback is not arbitrary: for `target <= 0` the component's own
+  pre-existing `isReady` is already `true`, so `100` is the value consistent
+  with the status the same render already displays. It also preserves the
+  pre-existing `target 0` / non-zero-wallet result, which was already `100`.
+- Positive targets take the original expression verbatim, bit-for-bit.
+- Four one-line hunks. No new file, no new component, no shared helper, no
+  config change, no dependency change.
+
+Deliberately NOT changed:
+- No shared `goalProgress()` helper was extracted. These four components
+  already deliberately duplicate the `isReady` / `remaining` / `progress` trio
+  inline; centralising it would have been a partial refactor of all four
+  components, not the smallest fix for E1.
+- `Goals.jsx` manual-entry validation was NOT tightened. The audit finding is
+  about NaN PROGRESS, and `AddGoalFromLink.jsx` already guards `price <= 0`
+  while the manual input already carries `min="1"`. Adding new validation would
+  have invented a requirement beyond the finding.
+- The other target-derived values were inspected and produce no NaN for target
+  0, so they were left alone: `isReady`, `remaining`, `daysLeft`
+  (`GoalRow.jsx:29`, `GoalsTable.jsx:92`), `readyCount`
+  (`GoalsTable.jsx:38`, `Goals.jsx:202`), the `PriorityGoalCard` goal
+  partitioning, and `PredictionGraph.generateProjection()`, which returns a
+  clean single-point series for a 0 target with no crash.
+- `Backend/models/Goal.js` (`targetPrice` `min: [1, ...]`) and
+  `Backend/controllers/goalController.js` (`if (!itemName || !targetPrice)`)
+  were READ ONLY, to establish how a 0 target could reach the renderer. They
+  currently block 0 on the create path, so the frontend guard is
+  defence-in-depth against legacy or seeded records. NOT modified.
+- `undefined` / non-numeric targets were NOT addressed. That is a different
+  defect class, it is not the E1 finding, and `.toLocaleString()` on the target
+  would already throw first.
+- E2-E8 were NOT started. Every E2-E8 file was confirmed unmodified:
+  `RoundUpPopup.jsx`, `Login.jsx`, `main.tsx`, `Goals.jsx`,
+  `PaymentModal.jsx`, `QRScanner.jsx`, `Dashboard.jsx`.
+- The 9 pre-existing C4 lint violations were NOT fixed.
+- No unrelated cleanup, refactoring or accessibility change.
+- No backend changes.
+
+Verification:
+- Four frontend goal components were fixed to prevent NaN progress when target
+  is 0: `GoalRow.jsx`, `GoalsTable.jsx`, `PredictionGraph.jsx` and
+  `PriorityGoalCard.jsx`.
+- Target-0 rendering was verified with 0 NaN cases after the fix. The four real
+  components were bundled and server-rendered with `react-dom/server`, then the
+  emitted HTML was scanned for `NaN`, across 6 scenarios x 4 components =
+  24 renders:
+  - Negative control against the PRE-FIX code (`git stash`ed): 20/24 clean,
+    4 FAILURES — all four in the `target 0` / `wallet 0` scenario, one per
+    component, each with `"NaN" in output: true` and no valid percentage
+    emitted at all.
+  - After the fix, the identical harness reported 24/24 clean, 0 NaN. The
+    `target 0` / `wallet 0` case now renders `100%` with a valid
+    `width: 100%`.
+  - The `target 0` / `wallet 500` case rendered `100%` both before and after,
+    confirming that sibling case is unchanged.
+  - The harness and its bundle were deleted afterwards; `git status` showed only
+    the 4 source files.
+- Positive-target behaviour was proven unchanged by A/B: pre-fix and post-fix
+  renders are IDENTICAL at wallet 0%, 50%, 100% and overfunded, and at
+  `target 0` / `wallet 500`.
+- Targeted `npx eslint` on all 4 changed files: clean, exit 0, 0 problems.
+- `npm run build` passed (`tsc -b && vite build`, 2381 modules — the same module
+  count as the D5 baseline). No chunk-size warning. Emitted chunk hashes were
+  byte-identical across both post-fix builds. The only bundle deltas versus the
+  D5 baseline are the expected few bytes for four guard expressions
+  (`Goals` 371.52 -> 371.57 kB, `Dashboard` 31.21 -> 31.22 kB); entry chunk,
+  `api` chunk and CSS are unchanged.
+- `npm run lint`: exactly the same 9 pre-existing C4 violations
+  (ContactCard.jsx, PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same
+  rules, same line numbers, same count as the pre-change baseline. Full lint
+  remains at the known 9-violation C4 baseline. NO NEW VIOLATIONS INTRODUCED.
+  NOT fixed.
+- EOL integrity: all 4 files verified 100% CRLF, 0 bare LF (CRLF counts
+  unchanged at 177 / 216 / 245 / 138; the repo uses `core.autocrlf=true`).
+- `git show --stat d3a22f4` confirmed the commit touches ONLY the 4 E1 files
+  (4 files, +4 / -4) and does not touch `Backend/` or any of the four C4 files.
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+- `git status --porcelain -- FIX_PROGRESS.md` was empty during the E1
+  implementation; this tracker update was made afterwards, as a separate
+  documentation step.
+- The E1 commit `d3a22f4` is pushed: `git rev-parse HEAD` equals
+  `git rev-parse origin/main`, and `git log origin/main..HEAD` is empty.
+- E2-E8 were untouched — every E2-E8 file had empty git status after the E1
+  commit.
+- Working tree is clean after the push.
+
+LIMITATIONS:
+- The project has no test framework and no browser / E2E verification. The
+  target-0 case was verified by server-rendering the real components to static
+  HTML and scanning the output, which exercises the exact render expressions
+  but is NOT a browser paint. The recharts `ResponsiveContainer` emitted its
+  "width(-1) and height(-1)" notice in SSR because there is no layout box
+  without a DOM; that is a harness artefact, unrelated to E1.
+- Because the backend already rejects `targetPrice: 0` at both the model and the
+  controller layer, a 0 target is currently reachable in the frontend only via
+  data that bypassed those checks (for example a record written before `min: 1`
+  existed, or a direct database write). That is why the guard was placed in the
+  render layer rather than in the `Goals.jsx` form.
+- `target: 0` was NOT reproduced against a live backend, only in isolation via
+  the render harness.
+
+USER CONFIRMED E1 IS COMMITTED AND PUSHED.
+
+---
+
+# NEXT ISSUE
+
+## E2 — Unreachable exact-amount RoundUpPopup branch.
+
+STATUS: NEXT
+
+Original audit finding:
+
+Unreachable exact-amount RoundUpPopup branch.
+
 Original audit scope:
-- See the `EDGE CASES / MINOR` entry for E1 and the recorded audit locations for
+- See the `EDGE CASES / MINOR` entry for E2 and the recorded audit locations for
   this issue.
 
 IMPORTANT:
@@ -1883,13 +2039,13 @@ Before changing anything:
 
 Do NOT:
 - modify backend files or anything under `Backend/`
-- fix another audit issue (E2-E8, etc.)
+- fix another audit issue (E3-E8, etc.)
 - refactor unrelated code
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
 - re-open or modify dead-code items D1-D7
 
-Fix ONLY E1. Do NOT start any later issue (E2-E8).
+Fix ONLY E2. Do NOT start any later issue (E3-E8).
 
 ---
 
@@ -2093,13 +2249,13 @@ STATUS: FIXED + COMMITTED + PUSHED (see COMPLETED ISSUES above)
 
 Goal target 0 causes NaN progress.
 
-STATUS: PENDING
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 ## E2
 
 Unreachable exact-amount RoundUpPopup branch.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## E3
 
