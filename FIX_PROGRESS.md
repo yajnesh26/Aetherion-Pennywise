@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
 ## Last committed issue
 
-E2
+E3
 
 ## Next issue
 
-E3
+E4
 
 ## Current state
 
-- The last committed issue is E2 (FIXED + COMMITTED + PUSHED).
+- The last committed issue is E3 (FIXED + COMMITTED + PUSHED).
 - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
 - A1 is fixed and pushed.
 - A2 is fixed, committed and pushed.
@@ -89,12 +89,13 @@ E3
 - D7 is fixed, committed and pushed.
 - E1 is fixed, committed and pushed.
 - E2 is fixed, committed and pushed.
+- E3 is fixed, committed and pushed.
 - S1 was verified as already resolved by C1.
 - There is NO C5 in the original audit.
 - There is NO D8 in the original audit. D1-D7 are the complete DEAD CODE queue.
 - Do NOT invent issue numbers.
-- E3 is the next issue.
-- Do NOT start E3 until the user explicitly tells you to continue.
+- E4 is the next issue.
+- Do NOT start E4 until the user explicitly tells you to continue.
 
 ---
 
@@ -2158,18 +2159,164 @@ USER CONFIRMED E2 IS COMMITTED AND PUSHED.
 
 ---
 
-# NEXT ISSUE
-
 ## E3 — Logout leaves stale `pennywise_user`.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED
 
 Original audit finding:
 
 Logout leaves stale `pennywise_user`.
 
+Files changed:
+- frontend/src/components/Navbar.jsx
+- frontend/src/pages/Dashboard.jsx
+- frontend/src/pages/Goals.jsx
+- frontend/src/pages/Chatbot.jsx
+
+Committed as `808ef15` "Fix(frontend) : Clear stale user data on logout"
+(4 files, +8 / -0).
+
+Root cause:
+- `pennywise_user` is written in exactly three places and removed in ZERO
+  places. Writes: `Login.jsx:27`, `SetupProfile.jsx:35`, and the Google OAuth
+  callback at `main.tsx:10` — which writes ONLY `token`, never
+  `pennywise_user`. There was no `localStorage.removeItem("pennywise_user")`
+  anywhere in `frontend/src`.
+- All eight session-teardown sites removed only `token`:
+  1. `Navbar.jsx:25` — the user-initiated Logout button (`handleLogout`)
+  2. `Dashboard.jsx:94` — 401 on the goals/wallet fetch
+  3. `Goals.jsx:58` — 401 on fetch
+  4. `Goals.jsx:101` — 401 on create
+  5. `Goals.jsx:139` — 401 on create-from-link
+  6. `Goals.jsx:161` — 401 on delete
+  7. `Goals.jsx:194` — 401 on buy
+  8. `Chatbot.jsx:84` — 401 on ask
+  Every one of them then does `navigate("/login")`, so each is a real logout,
+  not just a token clear.
+- Proven stale-data chain, executed against the PRE-FIX source read from
+  `git show HEAD:...`:
+  1. `Navbar.handleLogout` runs; storage afterwards is `["pennywise_user"]` and
+     the full previous-user profile survives:
+     `{"name":"Alice Sharma","phoneNumber":"9998887776","accountNumber":"411122223333","ifscCode":"HDFC0001234","upiId":"alice@okhdfcbank"}`.
+  2. The next sign-in is Google OAuth. `main.tsx:10` sets `token` only, so
+     nothing overwrites the stale blob.
+  3. `Dashboard.jsx:56` reads it: the greeting resolved to `"Alice Sharma"`
+     (the PREVIOUS user) and the profile-completeness gate at `Dashboard.jsx:63-67`
+     evaluated TRUE from the previous user's phone/account, so the new user was
+     silently treated as the old one and `/setup-profile` was skipped.
+  4. `SetupProfile.jsx:7-14` pre-fills phone / account / IFSC / UPI straight
+     from `pennywise_user`, so the previous user's bank details would appear
+     pre-filled in the form.
+- Before the fix, 0 of 8 teardown sites cleared the stored user.
+
+Fix:
+- One added line at each of the eight teardown sites, immediately after the
+  existing token removal:
+  `localStorage.removeItem("pennywise_user");`
+  New line numbers: `Navbar.jsx:26`, `Dashboard.jsx:95`, `Goals.jsx:59`,
+  `Goals.jsx:103`, `Goals.jsx:142`, `Goals.jsx:165`, `Goals.jsx:199`,
+  `Chatbot.jsx:85`.
+- No existing statement was edited or reordered — the eight added lines are
+  insertions only (4 files, +8 / -0).
+- All eight teardown sites now remove BOTH `token` and `pennywise_user`, so no
+  logout path can leave stale user data behind.
+- No new file, no shared helper, no abstraction, no config change, no dependency
+  change, and no change to the authentication architecture.
+
+Deliberately NOT changed:
+- No shared `logout()` helper was extracted and no new service was added. The
+  existing code deliberately does this teardown inline at each site; adding a
+  helper would have been a broader refactor than the E3 finding requires.
+- `main.tsx` still does NOT write `pennywise_user` on Google OAuth. That is a
+  separate defect from the E3 finding (which is about stale data being LEFT
+  behind) and fixing it would have invented a requirement.
+- `App.tsx` still has no global route guard. Also a separate concern.
+- `Login.jsx` and `SetupProfile.jsx` were NOT modified. Their write paths
+  (`Login.jsx:25/27`, `SetupProfile.jsx:35`) and their reads
+  (`SetupProfile.jsx:7`) are untouched, which is what keeps normal login and
+  user initialization working.
+- The 9 pre-existing C4 lint violations were NOT fixed.
+- No unrelated cleanup, refactoring or accessibility change.
+- No backend changes.
+
+Verification:
+- The logout flow was traced and verified before and after by executing the
+  REAL source of `Navbar.handleLogout`, extracted from `git show HEAD:...`
+  (pre-fix) and from the working tree (post-fix), against a seeded
+  `localStorage` double and a stub `navigate`. A line-level diff of the two
+  harness runs contained ONLY the intended changes:
+  - Pre-fix: `0/8` teardown sites cleared the stored user; storage after logout
+    was `["pennywise_user"]` with the full Alice profile; after a simulated
+    Google sign-in the Dashboard greeting was `"Alice Sharma"` and the
+    profile-complete gate was `true`.
+  - Post-fix: `8/8` teardown sites clear the stored user; storage after logout
+    is `[]`; `"pennywise_user"` is `<REMOVED>`; after a simulated Google
+    sign-in the Dashboard greeting is `undefined` and the profile-complete gate
+    is `false`, so the new user is correctly sent to `/setup-profile` instead
+    of inheriting the previous user's identity.
+- The seven 401 handlers were verified by a mechanical statement-pairing
+  assertion over the real source: every one of the eight `removeItem("token")`
+  occurrences is now immediately followed by `removeItem("pennywise_user")`
+  (`8/8`, was `0/8`).
+- Normal login / user initialization is unchanged. The same harness executed
+  the REAL `Login.jsx:25/27` write pair, the REAL `SetupProfile.jsx` pre-fill
+  initialiser and the REAL `Dashboard.jsx` greeting / profile-gate
+  expressions against a freshly authenticated store. Output was IDENTICAL
+  before and after the fix: keys `["token","pennywise_user"]`, SetupProfile form
+  pre-filled with the signed-in user's phone / account / IFSC / UPI, greeting
+  `"Bob Verma"`, profile-complete gate `true` -> navigates to `/dashboard`.
+  These lines produced zero differences in the before/after diff.
+- Targeted `npx eslint src/components/Navbar.jsx src/pages/Dashboard.jsx
+  src/pages/Goals.jsx src/pages/Chatbot.jsx` — clean, 0 problems.
+- `npm run lint`: exactly the same 9 pre-existing C4 violations
+  (ContactCard.jsx, PaymentModal.jsx, QRScanner.jsx, RoundUpPopup.jsx) — same
+  rules, same count as the pre-change baseline. Full lint remains at the known
+  9-violation C4 baseline. NO NEW VIOLATIONS INTRODUCED. NOT fixed.
+- `npm run build` passed (`tsc -b && vite build`, 2381 modules transformed — the
+  same module count as the E1 and E2 baselines).
+- EOL integrity: all 4 files verified 100% CRLF, 0 bare LF (Navbar.jsx 121,
+  Dashboard.jsx 368, Goals.jsx 396, Chatbot.jsx 199; counts +1 from the added
+  lines; the repo uses `core.autocrlf=true`). `git diff --check` was clean.
+- `git show --stat 808ef15` confirmed the commit touches ONLY the 4 E3 files
+  (4 files, +8 / -0) and does not touch `Backend/`.
+- `git status --porcelain -- Backend` returned empty — Backend/ untouched.
+- `git status --porcelain -- FIX_PROGRESS.md` was empty during the E3
+  implementation; this tracker update was made afterwards, as a separate
+  documentation step.
+- The E3 commit `808ef15` is pushed: `git rev-parse HEAD` equals `git rev-parse
+  origin/main`, and `git log origin/main..HEAD` is empty.
+- E4-E8 were untouched — the commit touches no E4-E8 file and the working tree
+  was clean apart from the four E3 source files.
+- The harness was deleted afterwards; `git status` showed only the 4 source
+  files.
+- No source code was modified as part of this tracker update.
+
+LIMITATIONS:
+- The project has no test framework and no browser / E2E verification, and no
+  DOM test library is installed (`jsdom`, `happy-dom` and `linkedom` are all
+  absent), so the Logout button was NOT clicked in a real browser. The real
+  `handleLogout` body was extracted from the real source and executed, which
+  proves the storage and navigation semantics but is NOT a browser interaction.
+- The seven 401 handlers were proven by source statement-pairing plus the
+  Navbar execution, not by driving a live 401 response through each page.
+- Logout was not exercised against a live backend or a real browser session.
+
+USER CONFIRMED E3 IS COMMITTED AND PUSHED.
+
+---
+
+# NEXT ISSUE
+
+## E4 — New first goal does not become selected automatically.
+
+STATUS: NEXT
+
+Original audit finding:
+
+New first goal does not become selected automatically.
+
 Original audit scope:
-- See the `EDGE CASES / MINOR` entry for E3 and the recorded audit locations for
+- See the `EDGE CASES / MINOR` entry for E4 and the recorded audit locations for
   this issue.
 
 IMPORTANT:
@@ -2183,13 +2330,13 @@ Before changing anything:
 
 Do NOT:
 - modify backend files or anything under `Backend/`
-- fix another audit issue (E4-E8, etc.)
+- fix another audit issue (E5-E8, etc.)
 - refactor unrelated code
 - make unrelated accessibility changes
 - fix the 9 pre-existing C4 lint violations
 - re-open or modify dead-code items D1-D7
 
-Fix ONLY E3. Do NOT start any later issue (E4-E8).
+Fix ONLY E4. Do NOT start any later issue (E5-E8).
 
 ---
 
@@ -2405,13 +2552,13 @@ STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 Logout leaves stale `pennywise_user`.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 ## E4
 
 New first goal does not become selected automatically.
 
-STATUS: PENDING
+STATUS: NEXT
 
 ## E5
 
