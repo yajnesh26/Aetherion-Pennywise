@@ -34,7 +34,7 @@ export default function PriorityGoalCard({ goals = [], totalSavings = 0 }) {
     : readyGoals[0];
 
   const remaining = Math.max(featuredGoal.target - totalSavings, 0);
-  const progress = Math.min((totalSavings / featuredGoal.target) * 100, 100);
+  const progress = featuredGoal.target > 0 ? Math.min((totalSavings / featuredGoal.target) * 100, 100) : 100;
   const isReady = totalSavings >= featuredGoal.target;
 
   return (

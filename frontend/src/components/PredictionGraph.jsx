@@ -93,7 +93,7 @@ export default function PredictionGraph({ goal, totalSavings = 0, dailySaving = 
     goal.target,
     dailySaving
   );
-  const percentage = Math.min((totalSavings / goal.target) * 100, 100);
+  const percentage = goal.target > 0 ? Math.min((totalSavings / goal.target) * 100, 100) : 100;
   const isReady = totalSavings >= goal.target;
 
   return (

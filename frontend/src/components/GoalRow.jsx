@@ -25,7 +25,7 @@ export default function GoalRow({
 }) {
   const isReady = totalSavings >= goal.target;
   const remaining = Math.max(goal.target - totalSavings, 0);
-  const progress = Math.min((totalSavings / goal.target) * 100, 100);
+  const progress = goal.target > 0 ? Math.min((totalSavings / goal.target) * 100, 100) : 100;
   const daysLeft = !isReady
     ? Math.max(Math.ceil(remaining / (dailySaving || 50)), 0)
     : 0;
