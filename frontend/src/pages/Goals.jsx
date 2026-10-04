@@ -56,6 +56,7 @@ export default function Goals() {
       console.error("Failed to fetch goals:", err);
       if (err.response?.status === 401) {
         localStorage.removeItem("token");
+        localStorage.removeItem("pennywise_user");
         navigate("/login");
         return;
       }
@@ -99,6 +100,7 @@ export default function Goals() {
       console.error("Create goal failed:", err);
       if (err.response?.status === 401) {
         localStorage.removeItem("token");
+        localStorage.removeItem("pennywise_user");
         navigate("/login");
         return;
       }
@@ -137,6 +139,7 @@ export default function Goals() {
       console.error("Create goal from link failed:", err);
       if (err.response?.status === 401) {
         localStorage.removeItem("token");
+        localStorage.removeItem("pennywise_user");
         navigate("/login");
         return;
       }
@@ -159,6 +162,7 @@ export default function Goals() {
       console.error("Delete goal failed:", err);
       if (err.response?.status === 401) {
         localStorage.removeItem("token");
+        localStorage.removeItem("pennywise_user");
         navigate("/login");
         return;
       }
@@ -192,6 +196,7 @@ export default function Goals() {
       console.error("Buy goal failed:", err);
       if (err.response?.status === 401) {
         localStorage.removeItem("token");
+        localStorage.removeItem("pennywise_user");
         navigate("/login");
         return;
       }

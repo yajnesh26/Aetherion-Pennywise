@@ -82,6 +82,7 @@ export default function Chatbot() {
       // Treat 401 as an authentication/session problem, not a network failure
       if (err.response?.status === 401) {
         localStorage.removeItem("token");
+        localStorage.removeItem("pennywise_user");
         navigate("/login");
         return;
       }

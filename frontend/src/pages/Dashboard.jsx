@@ -92,6 +92,7 @@ export default function Dashboard() {
       console.error("Dashboard fetch failed:", err);
       if (err.response?.status === 401) {
         localStorage.removeItem("token");
+        localStorage.removeItem("pennywise_user");
         navigate("/login");
       }
     } finally {
