@@ -277,7 +277,7 @@ export default function Goals() {
             Savings Wallet
           </p>
           <p className="text-2xl font-bold text-white font-mono mt-0.5">
-            ₹{totalSavings.toLocaleString("en-IN")}
+            ₹{totalSavings.toFixed(0)}
           </p>
         </div>
         <div className="text-right space-y-1">
