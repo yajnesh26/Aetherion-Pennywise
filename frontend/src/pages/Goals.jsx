@@ -93,7 +93,13 @@ export default function Goals() {
         url: g.url || null,
       };
 
-      setGoals((prev) => [...prev, newGoal]);
+      setGoals((prev) => {
+        const updated = [...prev, newGoal];
+        if (prev.length === 0) {
+          setSelectedGoal(newGoal);
+        }
+        return updated;
+      });
       setForm({ name: "", target: "" });
       setShowForm(false);
     } catch (err) {
@@ -132,7 +138,13 @@ export default function Goals() {
         url: g.url || null,
       };
 
-      setGoals((prev) => [...prev, newGoal]);
+      setGoals((prev) => {
+        const updated = [...prev, newGoal];
+        if (prev.length === 0) {
+          setSelectedGoal(newGoal);
+        }
+        return updated;
+      });
       setShowForm(false);
       setAddMode("manual");
     } catch (err) {
