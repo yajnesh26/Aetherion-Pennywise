@@ -200,7 +200,10 @@ export default function Goals() {
       }
 
       if (goal.url) {
-        window.open(goal.url, "_blank", "noopener,noreferrer");
+        const opened = window.open(goal.url, "_blank", "noopener,noreferrer");
+        if (!opened) {
+          alert(message || `🎉 Purchased "${goal.name}" for ₹${goal.target.toLocaleString("en-IN")}!`);
+        }
       } else {
         alert(message || `🎉 Purchased "${goal.name}" for ₹${goal.target.toLocaleString("en-IN")}!`);
       }
