@@ -61,41 +61,42 @@ OpenCode MUST read this file BEFORE doing any work.
 
 E3
 
-## Next issue
+  ## Next issue
 
-E4
+  E5
 
-## Current state
+  ## Current state
 
-- The last committed issue is E3 (FIXED + COMMITTED + PUSHED).
-- S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
-- A1 is fixed and pushed.
-- A2 is fixed, committed and pushed.
-- A3 is fixed, committed and pushed.
-- A4 is fixed, committed and pushed.
-- A5 is fixed, committed and pushed.
-- The ACCESSIBILITY queue (A1-A5) is now complete.
-- P1 is fixed, committed and pushed.
-- P2 is fixed, committed and pushed.
-- P3 is fixed, committed and pushed.
-- P4 is fixed, committed and pushed.
-- The PERFORMANCE / QUALITY queue (P1-P4) is now complete.
-- D1 is fixed, committed and pushed.
-- D2 is fixed, committed and pushed.
-- D3 is fixed, committed and pushed.
-- D4 is fixed, committed and pushed.
-- D5 is fixed, committed and pushed.
-- D6 is fixed, committed and pushed.
-- D7 is fixed, committed and pushed.
-- E1 is fixed, committed and pushed.
-- E2 is fixed, committed and pushed.
-- E3 is fixed, committed and pushed.
-- S1 was verified as already resolved by C1.
-- There is NO C5 in the original audit.
-- There is NO D8 in the original audit. D1-D7 are the complete DEAD CODE queue.
-- Do NOT invent issue numbers.
-- E4 is the next issue.
-- Do NOT start E4 until the user explicitly tells you to continue.
+  - The last committed issue is E4 (FIXED + COMMITTED + PUSHED).
+  - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
+  - A1 is fixed and pushed.
+  - A2 is fixed, committed and pushed.
+  - A3 is fixed, committed and pushed.
+  - A4 is fixed, committed and pushed.
+  - A5 is fixed, committed and pushed.
+  - The ACCESSIBILITY queue (A1-A5) is now complete.
+  - P1 is fixed, committed and pushed.
+  - P2 is fixed, committed and pushed.
+  - P3 is fixed, committed and pushed.
+  - P4 is fixed, committed and pushed.
+  - The PERFORMANCE / QUALITY queue (P1-P4) is now complete.
+  - D1 is fixed, committed and pushed.
+  - D2 is fixed, committed and pushed.
+  - D3 is fixed, committed and pushed.
+  - D4 is fixed, committed and pushed.
+  - D5 is fixed, committed and pushed.
+  - D6 is fixed, committed and pushed.
+  - D7 is fixed, committed and pushed.
+  - E1 is fixed, committed and pushed.
+  - E2 is fixed, committed and pushed.
+  - E3 is fixed, committed and pushed.
+  - E4 is fixed, committed and pushed.
+  - S1 was verified as already resolved by C1.
+  - There is NO C5 in the original audit.
+  - There is NO D8 in the original audit. D1-D7 are the complete DEAD CODE queue.
+  - Do NOT invent issue numbers.
+  - E5 is the next issue.
+  - Do NOT start E5 until the user explicitly tells you to continue.
 
 ---
 
@@ -2309,7 +2310,7 @@ USER CONFIRMED E3 IS COMMITTED AND PUSHED.
 
 ## E4 — New first goal does not become selected automatically.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED
 
 Original audit finding:
 
@@ -2319,24 +2320,20 @@ Original audit scope:
 - See the `EDGE CASES / MINOR` entry for E4 and the recorded audit locations for
   this issue.
 
-IMPORTANT:
-Before changing anything:
+Fix applied:
+- Modified goal creation in `frontend/src/pages/Goals.jsx` for both manual (handleAdd) and product-link (handleAddFromLink) creation paths.
+- When creating a goal and the previous goals list was empty, the newly created goal is now automatically selected (`setSelectedGoal(newGoal)`).
+- This preserves existing behavior: if goals already exist, the currently selected goal remains unchanged.
 
-1. Inspect the current source and compare it with this description — do not
-   assume the audit state is unchanged.
-2. Preserve the existing application behaviour.
-3. Do NOT invent requirements. Use the tooling and patterns already present in
-   the project.
-
-Do NOT:
-- modify backend files or anything under `Backend/`
-- fix another audit issue (E5-E8, etc.)
-- refactor unrelated code
-- make unrelated accessibility changes
-- fix the 9 pre-existing C4 lint violations
-- re-open or modify dead-code items D1-D7
-
-Fix ONLY E4. Do NOT start any later issue (E5-E8).
+Verification:
+- Both manual goal creation and product-link goal creation now select the newly created goal when it is the first goal.
+- Existing selected goals remain unchanged when adding additional goals.
+- Targeted lint on `frontend/src/pages/Goals.jsx` passed.
+- TypeScript check (`tsc --noEmit`) passed.
+- Build (`npm run build`) passed.
+- E5–E8 were untouched.
+- Backend was untouched.
+- User confirmed E4 is committed and pushed.
 
 ---
 
@@ -2558,7 +2555,7 @@ STATUS: FIXED + COMMITTED + PUSHED + USER CONFIRMED (see COMPLETED ISSUES above)
 
 New first goal does not become selected automatically.
 
-STATUS: NEXT
+STATUS: FIXED + COMMITTED + PUSHED
 
 ## E5
 
