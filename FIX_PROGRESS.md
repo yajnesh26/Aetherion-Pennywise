@@ -57,13 +57,13 @@ OpenCode MUST read this file BEFORE doing any work.
 
 # CURRENT STATUS
 
-## Last committed issue
+  ## Last committed issue
 
-E3
+  E5
 
   ## Next issue
 
-  E5
+  E6
 
   ## Current state
 
@@ -91,12 +91,13 @@ E3
   - E2 is fixed, committed and pushed.
   - E3 is fixed, committed and pushed.
   - E4 is fixed, committed and pushed.
+  - E5 is fixed, committed and pushed.
   - S1 was verified as already resolved by C1.
   - There is NO C5 in the original audit.
   - There is NO D8 in the original audit. D1-D7 are the complete DEAD CODE queue.
   - Do NOT invent issue numbers.
-  - E5 is the next issue.
-  - Do NOT start E5 until the user explicitly tells you to continue.
+  - E6 is the next issue.
+  - Do NOT start E6 until the user explicitly tells you to continue.
 
 ---
 
@@ -2561,7 +2562,19 @@ STATUS: FIXED + COMMITTED + PUSHED
 
 Wallet precision differs between Dashboard and Goals.
 
-STATUS: PENDING
+STATUS: FIXED + COMMITTED + PUSHED
+
+Verification:
+- Dashboard formatted the wallet with `toFixed(0)` while Goals preserved fractional precision with `toLocaleString("en-IN")`.
+- Goals now uses `toFixed(0)` so both views display consistent wallet precision.
+- The underlying wallet value was not changed.
+- Targeted lint passed.
+- TypeScript check passed.
+- Build passed.
+- Full lint remains at the known 9-violation C4 baseline.
+- E6–E8 were untouched.
+- Backend was untouched.
+- User confirmed E5 is committed and pushed.
 
 ## E6
 
