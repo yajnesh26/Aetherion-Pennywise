@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
   ## Last committed issue
 
-  E5
+  E6
 
   ## Next issue
 
-  E6
+  E7
 
   ## Current state
 
-  - The last committed issue is E4 (FIXED + COMMITTED + PUSHED).
+  - The last committed issue is E6 (FIXED + COMMITTED + PUSHED).
   - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
   - A1 is fixed and pushed.
   - A2 is fixed, committed and pushed.
@@ -92,12 +92,13 @@ OpenCode MUST read this file BEFORE doing any work.
   - E3 is fixed, committed and pushed.
   - E4 is fixed, committed and pushed.
   - E5 is fixed, committed and pushed.
+  - E6 is fixed, committed and pushed.
   - S1 was verified as already resolved by C1.
   - There is NO C5 in the original audit.
   - There is NO D8 in the original audit. D1-D7 are the complete DEAD CODE queue.
   - Do NOT invent issue numbers.
-  - E6 is the next issue.
-  - Do NOT start E6 until the user explicitly tells you to continue.
+  - E7 is the next issue.
+  - Do NOT start E7 until the user explicitly tells you to continue.
 
 ---
 
@@ -2309,32 +2310,17 @@ USER CONFIRMED E3 IS COMMITTED AND PUSHED.
 
 # NEXT ISSUE
 
-## E4 — New first goal does not become selected automatically.
+## E7 — QR scanner fixed width can overflow narrow screens.
 
-STATUS: FIXED + COMMITTED + PUSHED
+STATUS: NEXT
 
 Original audit finding:
 
-New first goal does not become selected automatically.
+QR scanner fixed width can overflow narrow screens.
 
 Original audit scope:
-- See the `EDGE CASES / MINOR` entry for E4 and the recorded audit locations for
+- See the `EDGE CASES / MINOR` entry for E7 and the recorded audit locations for
   this issue.
-
-Fix applied:
-- Modified goal creation in `frontend/src/pages/Goals.jsx` for both manual (handleAdd) and product-link (handleAddFromLink) creation paths.
-- When creating a goal and the previous goals list was empty, the newly created goal is now automatically selected (`setSelectedGoal(newGoal)`).
-- This preserves existing behavior: if goals already exist, the currently selected goal remains unchanged.
-
-Verification:
-- Both manual goal creation and product-link goal creation now select the newly created goal when it is the first goal.
-- Existing selected goals remain unchanged when adding additional goals.
-- Targeted lint on `frontend/src/pages/Goals.jsx` passed.
-- TypeScript check (`tsc --noEmit`) passed.
-- Build (`npm run build`) passed.
-- E5–E8 were untouched.
-- Backend was untouched.
-- User confirmed E4 is committed and pushed.
 
 ---
 
@@ -2580,7 +2566,19 @@ Verification:
 
 Buy success can be invisible if `window.open` is blocked.
 
-STATUS: PENDING
+STATUS: FIXED + COMMITTED + PUSHED
+
+Verification:
+- A successful purchase with a product URL could previously become invisible when `window.open()` returned null because of popup blocking.
+- The frontend now checks the return value of `window.open()` and shows the existing success confirmation when the popup is blocked.
+- Popup-allowed behavior remains unchanged.
+- Targeted lint passed.
+- TypeScript check passed.
+- Build passed.
+- Full lint remains at the known 9-violation C4 baseline.
+- E7–E8 were untouched.
+- Backend was untouched.
+- User confirmed E6 is committed and pushed.
 
 ## E7
 
