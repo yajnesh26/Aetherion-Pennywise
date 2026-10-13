@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
   ## Last committed issue
 
-  E7
+  E8
 
   ## Next issue
 
-  E8
+  None defined — the EDGE CASES / MINOR queue (E1-E8) is complete.
 
   ## Current state
 
-  - The last committed issue is E7 (FIXED + COMMITTED + PUSHED).
+  - The last committed issue is E8 (FIXED + COMMITTED + PUSHED).
   - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
   - A1 is fixed and pushed.
   - A2 is fixed, committed and pushed.
@@ -94,12 +94,14 @@ OpenCode MUST read this file BEFORE doing any work.
   - E5 is fixed, committed and pushed.
   - E6 is fixed, committed and pushed.
   - E7 is fixed, committed and pushed.
+  - E8 is fixed, committed and pushed.
+  - The EDGE CASES / MINOR queue (E1-E8) is now complete.
   - S1 was verified as already resolved by C1.
   - There is NO C5 in the original audit.
   - There is NO D8 in the original audit. D1-D7 are the complete DEAD CODE queue.
   - Do NOT invent issue numbers.
-  - E8 is the next issue.
-  - Do NOT start E8 until the user explicitly tells you to continue.
+  - E8 was the last defined issue. No next issue is defined in this queue.
+  - Do NOT start a new issue until the user explicitly tells you to continue.
 
 ---
 
@@ -2311,11 +2313,16 @@ USER CONFIRMED E3 IS COMMITTED AND PUSHED.
 
 # NEXT ISSUE
 
-## E8
+None defined.
 
-Hard-coded average daily saving / misleading round-up copy.
+E1-E8 are complete. E8 was the last defined item in the EDGE CASES / MINOR
+queue, so no next issue has been defined in this queue.
 
-STATUS: PENDING
+Do NOT invent E9 or any other issue number.
+
+Other existing audit queues in this tracker (ACCESSIBILITY, PERFORMANCE /
+QUALITY, DEAD CODE and the F/S/C items) are preserved as already recorded and
+are not re-opened.
 
 ---
 
@@ -2597,7 +2604,18 @@ Verification:
 
 Hard-coded average daily saving / misleading round-up copy.
 
-STATUS: PENDING
+STATUS: FIXED + COMMITTED + PUSHED
+
+Verification:
+- `RoundUpPopup.jsx` now displays the actual backend-provided `roundedAmount`, with its existing backward-compatible fallback.
+- `Goals.jsx` now labels the hard-coded ₹75/day rate as "Assumed daily saving" rather than presenting it as a measured user average.
+- Wallet calculations, saved amounts, projection logic, and purchase/payment behavior were not changed.
+- Targeted lint showed only the existing RoundUpPopup C4 violations; `Goals.jsx` was clean.
+- Full lint remains at the known 9-error C4 baseline.
+- Build passed.
+- E1–E7 were untouched.
+- Backend was untouched.
+- User confirmed E8 is committed and pushed.
 
 ---
 
