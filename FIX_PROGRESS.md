@@ -59,15 +59,15 @@ OpenCode MUST read this file BEFORE doing any work.
 
   ## Last committed issue
 
-  E6
+  E7
 
   ## Next issue
 
-  E7
+  E8
 
   ## Current state
 
-  - The last committed issue is E6 (FIXED + COMMITTED + PUSHED).
+  - The last committed issue is E7 (FIXED + COMMITTED + PUSHED).
   - S3 has been reviewed — NO CODE CHANGE (documented by-design tradeoff).
   - A1 is fixed and pushed.
   - A2 is fixed, committed and pushed.
@@ -93,12 +93,13 @@ OpenCode MUST read this file BEFORE doing any work.
   - E4 is fixed, committed and pushed.
   - E5 is fixed, committed and pushed.
   - E6 is fixed, committed and pushed.
+  - E7 is fixed, committed and pushed.
   - S1 was verified as already resolved by C1.
   - There is NO C5 in the original audit.
   - There is NO D8 in the original audit. D1-D7 are the complete DEAD CODE queue.
   - Do NOT invent issue numbers.
-  - E7 is the next issue.
-  - Do NOT start E7 until the user explicitly tells you to continue.
+  - E8 is the next issue.
+  - Do NOT start E8 until the user explicitly tells you to continue.
 
 ---
 
@@ -2310,17 +2311,11 @@ USER CONFIRMED E3 IS COMMITTED AND PUSHED.
 
 # NEXT ISSUE
 
-## E7 — QR scanner fixed width can overflow narrow screens.
+## E8
 
-STATUS: NEXT
+Hard-coded average daily saving / misleading round-up copy.
 
-Original audit finding:
-
-QR scanner fixed width can overflow narrow screens.
-
-Original audit scope:
-- See the `EDGE CASES / MINOR` entry for E7 and the recorded audit locations for
-  this issue.
+STATUS: PENDING
 
 ---
 
@@ -2584,7 +2579,19 @@ Verification:
 
 QR scanner fixed width can overflow narrow screens.
 
-STATUS: PENDING
+STATUS: FIXED + COMMITTED + PUSHED
+
+Verification:
+- `QRScanner.jsx` used a fixed `w-[350px]` width that could overflow narrow viewports.
+- The overlay now has `p-4`, and the dialog uses `w-full max-w-[350px]`.
+- At a 320px viewport, the dialog fits within 288px with 16px gutters.
+- Desktop sizing remains unchanged for viewports of 382px or wider.
+- Targeted lint retains only the 5 pre-existing QRScanner C4 violations.
+- Full lint remains at the known 9-error C4 baseline.
+- Build passed.
+- E8 was untouched.
+- Backend was untouched.
+- User confirmed E7 is committed and pushed.
 
 ## E8
 
