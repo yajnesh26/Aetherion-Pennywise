@@ -128,14 +128,14 @@ export default function QRScanner({ onScan, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="bg-slate-900 p-4 rounded-xl w-[350px]"
+        className="bg-slate-900 p-4 rounded-xl w-full max-w-[350px]"
       >
 
         <h2 id={titleId} className="text-white mb-3 text-center font-semibold">Scan UPI QR</h2>
