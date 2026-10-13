@@ -285,7 +285,7 @@ export default function Goals() {
         </div>
         <div className="text-right space-y-1">
           <div>
-            <p className="text-xs text-slate-400">Avg. daily saving</p>
+            <p className="text-xs text-slate-400">Assumed daily saving</p>
             <p className="text-sm font-semibold text-emerald-400 font-mono">
               +₹{AVG_DAILY_SAVING}/day
             </p>

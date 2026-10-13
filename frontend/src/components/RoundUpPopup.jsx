@@ -99,7 +99,7 @@ export default function RoundUpPopup({ payment, roundUpInfo, onSave, onSkip }) {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-400">Rounded to</span>
-                <span className="text-slate-200 font-mono">₹{roundedUp}</span>
+                <span className="text-slate-200 font-mono">₹{roundedAmount}</span>
               </div>
               <div className="border-t border-dashed border-slate-700 my-2" />
               <div className="flex items-center justify-between">
