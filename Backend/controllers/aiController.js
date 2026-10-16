@@ -16,7 +16,7 @@ exports.askAI = async (req, res) => {
   try {
     // Try Groq first
     const completion = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
+      model: "openai/gpt-oss-20b",
       messages: [
         {
           role: "system",
