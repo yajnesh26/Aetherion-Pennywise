@@ -1,4 +1,9 @@
 import { Bot, User } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+const normalizeBreaks = (text) =>
+  String(text ?? "").replace(/<br\s*\/?>/gi, "\n");
 
 export default function ChatMessage({ message }) {
   const isUser = message.role === "user";
@@ -18,13 +23,21 @@ export default function ChatMessage({ message }) {
 
       {/* Message bubble */}
       <div
-        className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+        className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
           isUser
-            ? "bg-accent text-white rounded-tr-md"
+            ? "bg-accent text-white rounded-tr-md whitespace-pre-wrap"
             : "bg-slate-700/50 text-slate-200 border border-slate-600/30 rounded-tl-md"
         }`}
       >
-        {message.text}
+        {isUser ? (
+          message.text
+        ) : (
+          <div className="chat-md">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} breaks>
+              {normalizeBreaks(message.text)}
+            </ReactMarkdown>
+          </div>
+        )}
       </div>
     </div>
   );
