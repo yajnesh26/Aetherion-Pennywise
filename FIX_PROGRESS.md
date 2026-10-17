@@ -2724,15 +2724,49 @@ Verification (all run; all passed):
 - Hostname edge cases — 15/15.
 - Final read-only security review: no Critical/High/Medium findings; only Low/informational notes.
 
-## 3. Review Findings / Follow-up
+## 3. Completed Issue: SEC-02 — Authentication Rate Limiting
 
-- All SEC-01 follow-up findings below were reviewed and resolved within the SEC-01 commit:
+- Files: `Backend/middleware/rateLimit.js` (NEW), `Backend/routes/authRoutes.js`
+- Commit: `909b497` — "fix(security): add authentication rate limiting"
+- Status: FIXED + COMMITTED + PUSHED + USER CONFIRMED.
+
+Implemented protections:
+- Added `Backend/middleware/rateLimit.js`, a dependency-free, in-memory fixed-window rate limiter exported as `createRateLimiter`.
+- `Backend/routes/authRoutes.js` now applies independent limiters to the two POST authentication routes:
+  - `POST /login` — 10 requests per IP per 15 minutes.
+  - `POST /register` — 5 requests per IP per 60 minutes.
+- Exceeded limits return HTTP 429 with JSON (`{"success": false, "message": "Too many requests. Please try again later."}`) and a `Retry-After` header (integer seconds, rounded up); the auth controller is not invoked on rejection.
+- Client IP keys are validated with `net.isIP`. Missing or malformed IPs fail closed with HTTP 503 and a generic JSON message plus `Retry-After`, rather than falling back to a shared bucket.
+- Key-capacity exhaustion also fails closed with HTTP 503 for brand-new IPs. Counters are keyed strictly on `req.ip` (`trust proxy` is untouched); expired entries are reclaimed during requests, active counters are never evicted, the map is bounded by `maxKeys`, and no timers are created.
+- The internal bucket map is no longer exposed (`rateLimiter.buckets` was removed after review).
+- Google OAuth routes are unchanged and carry no limiter.
+
+Verification (all run; all passed):
+- `node --check Backend/middleware/rateLimit.js` and `node --check Backend/routes/authRoutes.js` — syntax OK.
+- `git diff --check` — clean.
+- Temporary behavioral harness (no internal state access) — 26/26 passed: limits (5/6 and 10/11), 429 body, `Retry-After` rounding, per-IP and per-endpoint independence, 503 fail-closed for malformed IPs and for capacity, no active eviction, cleanup after expiry, route wiring, controller bypass on rejection, OAuth unaffected.
+- Independent read-only security review: no Critical/High findings; verdict PASS WITH MINOR CHANGES. The single recommended change (removing the exposed `rateLimiter.buckets`) was applied before the commit.
+
+Limitation:
+- The full live HTTP flow through the real authentication controllers was not tested (the project has no test framework and no database). Route wiring was verified structurally and by driving the real limiter handles with a stub `next`, so the controller is never invoked and no DB access occurs.
+
+Remaining risks:
+- Counters are in-memory and per process, so a multi-instance or clustered deployment multiplies the effective limit.
+- IPv6 address rotation can weaken per-IP limits.
+- Key-capacity exhaustion can cause HTTP 503 responses for new IPs (fail-closed by design; active counters are not evicted).
+
+## 4. Review Findings / Follow-up
+
+- SEC-01 follow-up findings reviewed and resolved in the SEC-01 commit:
   - DNS lookup address-family handling — fixed.
   - Incomplete private/reserved IP-range filtering — fixed (now `net.BlockList`).
   - Product-host allowlist compatibility with legitimate shopping URLs — reviewed; India-focused mobile and share hosts added.
+- SEC-02 follow-up findings: the only recommended change was applied within the SEC-02 commit:
+  - Removed the unnecessary exposure of the internal bucket map (`rateLimiter.buckets`). Confirmed no production code depended on it.
+  - Noted but deliberately NOT changed (out of SEC-02 scope): in-memory / per-process counters, IPv6 rotation weakening per-IP limits, and the HTTP 503 fail-closed behaviour on capacity exhaustion.
 - Do NOT start a new security issue until the user explicitly tells you to continue.
 
-## 4. Workflow
+## 5. Workflow
 
 - Read this tracker before starting work in every new session.
 - Inspect the current code and Git diff before making changes.
