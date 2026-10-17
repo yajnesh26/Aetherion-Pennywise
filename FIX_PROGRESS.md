@@ -2677,3 +2677,45 @@ DO NOT make the change.
 Explain it in the report and wait for the user.
 
 The user controls when the next issue begins.
+
+---
+
+# ============================================================
+# BACKEND SECURITY FIXES — ACTIVE WORKFLOW (SEC-xx)
+# ============================================================
+
+> This section is the persistent handoff tracker for the BACKEND security
+> fix workflow. The frontend tracker above is COMPLETE and CLOSED. Read this
+> section before starting backend work in a new session.
+
+## 1. Project Scope
+
+- We are currently working on the backend security fixes.
+- Fix only one issue at a time.
+- Do not modify unrelated files or features.
+- Never commit or push changes. I will do that manually.
+
+## 2. Current Issue: SEC-01 — Product URL SSRF Protection
+
+- File: `Backend/controllers/productController.js`
+- The initial SSRF protection implementation has been made but is still under review.
+- A remaining concern is whether Axios environment proxy settings can bypass the custom DNS-pinning protection.
+- Next action: apply `proxy: false` to the Axios request, inspect the diff, and run the relevant regression tests.
+- Status: In progress — not yet verified.
+
+## 3. Review Findings / Follow-up
+
+- Review the DNS lookup address-family handling.
+- Review incomplete private/reserved IP-range filtering.
+- Review compatibility of the product-host allowlist with legitimate shopping URLs.
+- Do not fix these follow-up findings yet. Handle each separately after reviewing the current issue.
+
+## 4. Workflow
+
+- Read this tracker before starting work in every new session.
+- Inspect the current code and Git diff before making changes.
+- Fix one issue at a time.
+- Report the exact files changed, diff summary, and test results.
+- Stop and wait for my review after each issue.
+- Update this tracker only when the implementation status has been reviewed and confirmed.
+- Never mark an issue verified merely because code was changed or tests were attempted.
