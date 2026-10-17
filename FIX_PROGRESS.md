@@ -2695,20 +2695,42 @@ The user controls when the next issue begins.
 - Do not modify unrelated files or features.
 - Never commit or push changes. I will do that manually.
 
-## 2. Current Issue: SEC-01 — Product URL SSRF Protection
+## 2. Completed Issue: SEC-01 — Product URL SSRF Protection
 
 - File: `Backend/controllers/productController.js`
-- The initial SSRF protection implementation has been made but is still under review.
-- A remaining concern is whether Axios environment proxy settings can bypass the custom DNS-pinning protection.
-- Next action: apply `proxy: false` to the Axios request, inspect the diff, and run the relevant regression tests.
-- Status: In progress — not yet verified.
+- Commit: `0fd72f7` — "fix(security): prevent SSRF in product fetching"
+- Status: FIXED + COMMITTED + PUSHED + USER CONFIRMED.
+
+Implemented protections:
+- HTTPS-only URL validation with an EXACT hostname allowlist (no substring or suffix matching).
+- Rejects userinfo, explicit non-default ports, spoofed/off-region hosts, and non-HTTPS schemes; lowercases and strips a single trailing dot before matching.
+- Allowed hosts: `amazon.in`, `www.amazon.in`, `m.amazon.in`, `amzn.in`, `amazon.com`, `www.amazon.com`, `flipkart.com`, `www.flipkart.com`, `m.flipkart.com`, `dl.flipkart.com`.
+- Custom `https.Agent` lookup resolves DNS once, filters non-public addresses, and pins the validated public IP for the connection (DNS-rebinding protection; `keepAlive: false`).
+- Public-IP classification via `net.BlockList` over non-global ranges: IPv4 and IPv6 private/loopback/link-local/CGNAT/metadata/reserved/documentation/multicast/ULA/site-local, plus 6to4, Teredo, NAT64, ORCHIDv1/v2, and IPv4-mapped/compatible forms. Malformed or unknown results fail closed.
+- Correct address-family handling for `options.family` and `options.all`, tagging the correct family per returned address; fails closed when there is no public or requested-family result.
+- Axios uses `proxy: false` so environment proxy variables cannot bypass the pinned lookup; TLS certificate verification is left enabled; per-attempt timeout enforced.
+- Redirect hardening: automatic redirects disabled (`maxRedirects: 0`) with a bounded (≤ 5 hops) manual loop that independently re-validates every redirect destination using the same URL rules.
+- Hardened request guard (`req.body`/`url` type checks). Product scraping and the URL-slug fallback are unchanged.
+
+Verification (all run; all passed):
+- `node --check Backend/controllers/productController.js` — syntax OK.
+- `git diff --check` — clean.
+- URL allowlist probe — 18/18.
+- API validation contract — 9/9.
+- IP classification — 60/60; newly blocked ranges — 54/54.
+- DNS resolution/pinning — 10/10.
+- Address-family handling — 10/10; `options.family`/`options.all` — 13/13.
+- Environment-proxy regression — CONTROL PASS + SUBJECT PASS.
+- Hostname edge cases — 15/15.
+- Final read-only security review: no Critical/High/Medium findings; only Low/informational notes.
 
 ## 3. Review Findings / Follow-up
 
-- Review the DNS lookup address-family handling.
-- Review incomplete private/reserved IP-range filtering.
-- Review compatibility of the product-host allowlist with legitimate shopping URLs.
-- Do not fix these follow-up findings yet. Handle each separately after reviewing the current issue.
+- All SEC-01 follow-up findings below were reviewed and resolved within the SEC-01 commit:
+  - DNS lookup address-family handling — fixed.
+  - Incomplete private/reserved IP-range filtering — fixed (now `net.BlockList`).
+  - Product-host allowlist compatibility with legitimate shopping URLs — reviewed; India-focused mobile and share hosts added.
+- Do NOT start a new security issue until the user explicitly tells you to continue.
 
 ## 4. Workflow
 
