@@ -2,12 +2,17 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 const { register, login, generateToken } = require("../controllers/authController");
+const { createRateLimiter } = require("../middleware/rateLimit");
+
+// SEC-02 — per-endpoint rate limiting with independent counters.
+const loginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
+const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5 });
 
 // POST /api/auth/register
-router.post("/register", register);
+router.post("/register", registerLimiter, register);
 
 // POST /api/auth/login
-router.post("/login", login);
+router.post("/login", loginLimiter, login);
 
 // --- Google OAuth routes (only active when configured) -----------------
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
