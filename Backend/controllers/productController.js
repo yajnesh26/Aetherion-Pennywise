@@ -1,13 +1,212 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
+const dns = require("dns");
+const net = require("net");
+const https = require("https");
 
-/**
- * Detect platform from URL
- */
-function detectPlatform(url) {
-  if (/amazon\.|amzn\./i.test(url)) return "Amazon";
-  if (/flipkart\./i.test(url)) return "Flipkart";
-  return "Unknown";
+const ALLOWED_HOSTS = new Map([
+  ["amazon.in", "Amazon"],
+  ["www.amazon.in", "Amazon"],
+  ["m.amazon.in", "Amazon"],
+  ["amzn.in", "Amazon"],
+  ["amazon.com", "Amazon"],
+  ["www.amazon.com", "Amazon"],
+  ["flipkart.com", "Flipkart"],
+  ["www.flipkart.com", "Flipkart"],
+  ["m.flipkart.com", "Flipkart"],
+  ["dl.flipkart.com", "Flipkart"],
+]);
+
+const NON_GLOBAL_RANGES = [
+  ["0.0.0.0", 8, "ipv4"],
+  ["10.0.0.0", 8, "ipv4"],
+  ["100.64.0.0", 10, "ipv4"],
+  ["127.0.0.0", 8, "ipv4"],
+  ["169.254.0.0", 16, "ipv4"],
+  ["172.16.0.0", 12, "ipv4"],
+  ["192.0.0.0", 24, "ipv4"],
+  ["192.0.2.0", 24, "ipv4"],
+  ["192.88.99.0", 24, "ipv4"],
+  ["192.168.0.0", 16, "ipv4"],
+  ["198.18.0.0", 15, "ipv4"],
+  ["198.51.100.0", 24, "ipv4"],
+  ["203.0.113.0", 24, "ipv4"],
+  ["224.0.0.0", 4, "ipv4"],
+  ["240.0.0.0", 4, "ipv4"],
+  ["::", 128, "ipv6"],
+  ["::1", 128, "ipv6"],
+  ["::", 96, "ipv6"],
+  ["100::", 64, "ipv6"],
+  ["2001::", 32, "ipv6"],
+  ["2001:2::", 48, "ipv6"],
+  ["2001:10::", 28, "ipv6"],
+  ["2001:20::", 28, "ipv6"],
+  ["2001:db8::", 32, "ipv6"],
+  ["2002::", 16, "ipv6"],
+  ["3ffe::", 16, "ipv6"],
+  ["3fff::", 20, "ipv6"],
+  ["5f00::", 16, "ipv6"],
+  ["64:ff9b::", 96, "ipv6"],
+  ["64:ff9b:1::", 48, "ipv6"],
+  ["fc00::", 7, "ipv6"],
+  ["fec0::", 10, "ipv6"],
+  ["fe80::", 10, "ipv6"],
+  ["ff00::", 8, "ipv6"],
+];
+
+const nonGlobalRanges = new net.BlockList();
+for (const [range, prefix, family] of NON_GLOBAL_RANGES) {
+  nonGlobalRanges.addSubnet(range, prefix, family);
+}
+
+function isPublicAddress(ip) {
+  if (net.isIPv4(ip)) return !nonGlobalRanges.check(ip, "ipv4");
+  if (net.isIPv6(ip)) return !nonGlobalRanges.check(ip, "ipv6");
+  return false;
+}
+
+async function resolvePublicAddresses(hostname) {
+  let host = hostname
+    .toLowerCase()
+    .replace(/\.$/, "")
+    .replace(/^\[|\]$/g, "");
+  if (net.isIPv4(host) || net.isIPv6(host)) {
+    return isPublicAddress(host) ? [host] : [];
+  }
+  const addresses = [];
+  try {
+    const v4 = await dns.promises.resolve4(host);
+    addresses.push(...v4);
+  } catch {}
+  try {
+    const v6 = await dns.promises.resolve6(host);
+    addresses.push(...v6);
+  } catch {}
+  return addresses.filter(isPublicAddress);
+}
+
+function normalizeFamily(value) {
+  if (value === 4 || value === "IPv4" || value === "ipv4") return 4;
+  if (value === 6 || value === "IPv6" || value === "ipv6") return 6;
+  return 0;
+}
+
+function addressFamily(address) {
+  return net.isIPv6(address) ? 6 : 4;
+}
+
+function createPinnedLookup(addresses) {
+  return function pinnedLookup(hostname, options, callback) {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    }
+    const requestedFamily = normalizeFamily(options && options.family);
+    const candidates = requestedFamily
+      ? addresses.filter((address) => addressFamily(address) === requestedFamily)
+      : addresses;
+    if (candidates.length === 0) {
+      return callback(new Error(`No DNS results for requested family ${requestedFamily}`));
+    }
+    if (!options || !options.all) {
+      const addr = candidates[0];
+      return callback(null, addr, addressFamily(addr));
+    }
+    return callback(
+      null,
+      candidates.map((address) => ({ address, family: addressFamily(address) }))
+    );
+  };
+}
+
+const safeAgent = new https.Agent({
+  keepAlive: false,
+  lookup: async (hostname, options, callback) => {
+    const addresses = await resolvePublicAddresses(hostname);
+    if (addresses.length === 0) {
+      return callback(new Error("No public DNS results for hostname"));
+    }
+    return createPinnedLookup(addresses)(hostname, options, callback);
+  },
+});
+
+function validateProductUrl(rawUrl) {
+  let parsed;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error("invalid-url");
+  }
+  if (parsed.protocol !== "https:") {
+    throw new Error("invalid-url");
+  }
+  if (parsed.username || parsed.password) {
+    throw new Error("invalid-url");
+  }
+  const hostname = parsed.hostname.toLowerCase().replace(/\.$/, "");
+  const platform = ALLOWED_HOSTS.get(hostname);
+  if (!platform) {
+    throw new Error("invalid-url");
+  }
+  if (parsed.port) {
+    throw new Error("invalid-url");
+  }
+  parsed.hostname = hostname;
+  return { normalizedUrl: parsed.toString(), platform };
+}
+
+async function fetchOnce(url, ua) {
+  const deadline = Date.now() + 15000;
+  let current = url;
+  for (let hop = 0; hop <= 5; hop++) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      throw new Error("timeout");
+    }
+    const response = await axios.get(current, {
+      headers: {
+        "User-Agent": ua,
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9,hi;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1",
+      },
+      timeout: remaining,
+      maxRedirects: 0,
+      validateStatus: (status) => status >= 200 && status < 400,
+      httpsAgent: safeAgent,
+      proxy: false,
+    });
+    const status = response.status;
+    if (status >= 300 && status < 400) {
+      const location = response.headers && response.headers.location;
+      if (!location) {
+        throw new Error("redirect-without-location");
+      }
+      let next;
+      try {
+        next = new URL(location, current).toString();
+      } catch {
+        throw new Error("invalid-redirect");
+      }
+      try {
+        validateProductUrl(next);
+      } catch {
+        throw new Error("invalid-redirect");
+      }
+      current = next;
+      continue;
+    }
+    return response;
+  }
+  throw new Error("too-many-redirects");
 }
 
 /**
@@ -36,24 +235,7 @@ async function fetchHTML(url) {
 
   for (const ua of agents) {
     try {
-      const { data } = await axios.get(url, {
-        headers: {
-          "User-Agent": ua,
-          Accept:
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.9,hi;q=0.8",
-          "Accept-Encoding": "gzip, deflate, br",
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-          "Sec-Fetch-Dest": "document",
-          "Sec-Fetch-Mode": "navigate",
-          "Sec-Fetch-Site": "none",
-          "Sec-Fetch-User": "?1",
-          "Upgrade-Insecure-Requests": "1",
-        },
-        timeout: 15000,
-        maxRedirects: 5,
-      });
+      const { data } = await fetchOnce(url, ua);
 
       // Check if we got a real page (not a CAPTCHA / empty shell)
       if (
@@ -70,11 +252,7 @@ async function fetchHTML(url) {
   }
 
   // Last-ditch: return whatever we get (may throw)
-  const { data } = await axios.get(url, {
-    headers: { "User-Agent": agents[0], Accept: "text/html" },
-    timeout: 15000,
-    maxRedirects: 5,
-  });
+  const { data } = await fetchOnce(url, agents[0]);
   return data;
 }
 
@@ -246,26 +424,28 @@ const PLATFORM_IMAGES = {
  */
 exports.fetchProduct = async (req, res) => {
   try {
-    const { url } = req.body;
+    const { url } = req.body || {};
 
-    if (!url || !url.trim()) {
+    if (typeof url !== "string" || !url.trim()) {
       return res
         .status(400)
         .json({ success: false, message: "Product URL is required" });
     }
 
-    const trimmedUrl = url.trim();
-    const platform = detectPlatform(trimmedUrl);
-
-    if (platform === "Unknown") {
+    const rawUrl = url.trim();
+    let platform;
+    let normalizedUrl;
+    try {
+      ({ normalizedUrl, platform } = validateProductUrl(rawUrl));
+    } catch {
       return res.status(400).json({
         success: false,
-        message: "Only Amazon and Flipkart links are supported",
+        message: "Only Amazon and Flipkart product links over HTTPS are supported.",
       });
     }
 
     // ── Layer 2 — always-available fallback from URL slug ──
-    const slugName = nameFromSlug(trimmedUrl);
+    const slugName = nameFromSlug(normalizedUrl);
 
     // ── Layer 1 — attempt full scrape ──
     let scrapedName = null;
@@ -274,7 +454,7 @@ exports.fetchProduct = async (req, res) => {
     let scraped = false;
 
     try {
-      const html = await fetchHTML(trimmedUrl);
+      const html = await fetchHTML(normalizedUrl);
       const $ = cheerio.load(html);
 
       scrapedName = extractTitle($, platform);
@@ -306,7 +486,7 @@ exports.fetchProduct = async (req, res) => {
         name: finalName,
         price: scrapedPrice ? Math.round(scrapedPrice) : null,
         image: scrapedImage || PLATFORM_IMAGES[platform] || null,
-        url: trimmedUrl,
+        url: rawUrl,
         platform,
       },
       // Let frontend know if we fell back so it can show a hint
