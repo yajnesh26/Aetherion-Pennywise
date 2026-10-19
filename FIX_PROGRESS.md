@@ -2782,7 +2782,34 @@ Verification (all run; all passed):
 Limitation:
 - Direct middleware-level behavioral checks were performed for the product and AI rate limits. No full HTTP integration test through the Express application was executed. The existing SEC-02 limiter implementation was reused without modification.
 
-## 5. Review Findings / Follow-up
+## 5. Completed Issue: SEC-04 — Google OAuth account takeover / unsafe account linking
+
+- File: `Backend/config/passport.js`
+- Commit: `ec85229` — "fix(security): prevent unsafe Google account linking"
+- Status: FIXED + COMMITTED + USER CONFIRMED.
+
+Issue:
+- Google OAuth could automatically link a Google identity to an existing password-based account using an email match without requiring verified Google email status.
+
+Implemented protections:
+- An existing Google-linked account is looked up by Google profile ID first.
+- Email matching, and account creation from email, are accepted only when `profile.emails[0].verified === true`.
+- Verified email addresses are normalized by trimming whitespace and converting to lowercase.
+- Automatic linking is rejected when a verified Google email matches an existing local password-only account.
+- Missing, malformed, or unverified email information fails closed.
+- Existing Google-linked sign-in behavior is preserved, and database errors are propagated.
+
+Verification (all run; all passed):
+- A temporary behavioral harness exercised the actual registered Passport verification callback and the installed Google profile parser — 14/14 scenarios passed, covering account-linking rejection, legitimate Google sign-in, verified account creation, malformed or unverified email handling, normalization edge cases, and database errors.
+- `node --check Backend/config/passport.js` — syntax OK.
+- `git diff --check` — clean.
+- The harness was removed after the run; it is not present in the working tree (`git status --short` was empty before this tracker update).
+- `git show --stat ec85229` — exactly 1 file (`Backend/config/passport.js`, +52 / -16); no other file touched.
+
+Limitation:
+- No live Google OAuth round trip or database-backed integration test was performed.
+
+## 6. Review Findings / Follow-up
 
 - SEC-01 follow-up findings reviewed and resolved in the SEC-01 commit:
   - DNS lookup address-family handling — fixed.
@@ -2793,7 +2820,7 @@ Limitation:
   - Noted but deliberately NOT changed (out of SEC-02 scope): in-memory / per-process counters, IPv6 rotation weakening per-IP limits, and the HTTP 503 fail-closed behaviour on capacity exhaustion.
 - Do NOT start a new security issue until the user explicitly tells you to continue.
 
-## 6. Workflow
+## 7. Workflow
 
 - Read this tracker before starting work in every new session.
 - Inspect the current code and Git diff before making changes.
