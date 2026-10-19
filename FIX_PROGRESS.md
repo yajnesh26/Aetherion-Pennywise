@@ -2755,7 +2755,34 @@ Remaining risks:
 - IPv6 address rotation can weaken per-IP limits.
 - Key-capacity exhaustion can cause HTTP 503 responses for new IPs (fail-closed by design; active counters are not evicted).
 
-## 4. Review Findings / Follow-up
+## 4. Completed Issue: SEC-03 — Rate Limiting for Resource-Intensive Endpoints
+
+- Files: `Backend/routes/productRoutes.js`, `Backend/routes/aiRoutes.js`
+- Commit: `502b528` — "fix(security): rate limit resource-intensive endpoints"
+- Status: FIXED + COMMITTED + PUSHED + USER CONFIRMED.
+
+Implemented protections:
+- Reuses the existing SEC-02 limiter `createRateLimiter` from `Backend/middleware/rateLimit.js`; no new middleware and no change to that file.
+- Product fetching — `POST /api/product/fetch` is limited to 30 requests per IP per 5 minutes.
+- AI assistant — `POST /api/ai/ask` is limited to 20 requests per IP per 15 minutes.
+- Both limiters are wired BEFORE authentication and before their respective controllers:
+  - `router.post("/fetch", productLimiter, protect, fetchProduct)`
+  - `router.post("/ask", aiLimiter, protect, askAI)`
+- Because the limiter runs first, an over-limit request never reaches `protect` or the controller, so the resource-intensive work (product scraping / AI call) is never performed once the limit is exceeded.
+- Rejected requests inherit the SEC-02 behaviour: HTTP 429 with JSON (`{"success": false, "message": "Too many requests. Please try again later."}`) and a `Retry-After` header.
+- Both routes keep their existing `protect` middleware; authentication is unchanged, it is simply evaluated after the rate limit.
+- Only `Backend/routes/productRoutes.js` and `Backend/routes/aiRoutes.js` were changed for this implementation (+12 / -4 across the two files).
+
+Verification (all run; all passed):
+- `node --check Backend/routes/productRoutes.js` and `node --check Backend/routes/aiRoutes.js` — syntax OK.
+- `git diff --check 502b528^ 502b528` — no whitespace errors reported.
+- `git show --stat 502b528` — exactly 2 files (`Backend/routes/aiRoutes.js`, `Backend/routes/productRoutes.js`, +12 / -4); no other file touched.
+- Push state: `502b528` is on `main` and `git log origin/main..HEAD` is empty.
+
+Limitation:
+- Direct middleware-level behavioral checks were performed for the product and AI rate limits. No full HTTP integration test through the Express application was executed. The existing SEC-02 limiter implementation was reused without modification.
+
+## 5. Review Findings / Follow-up
 
 - SEC-01 follow-up findings reviewed and resolved in the SEC-01 commit:
   - DNS lookup address-family handling — fixed.
@@ -2766,7 +2793,7 @@ Remaining risks:
   - Noted but deliberately NOT changed (out of SEC-02 scope): in-memory / per-process counters, IPv6 rotation weakening per-IP limits, and the HTTP 503 fail-closed behaviour on capacity exhaustion.
 - Do NOT start a new security issue until the user explicitly tells you to continue.
 
-## 5. Workflow
+## 6. Workflow
 
 - Read this tracker before starting work in every new session.
 - Inspect the current code and Git diff before making changes.
